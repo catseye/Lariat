@@ -3,11 +3,11 @@ Lariat
 
 **Lariat** is a project to define an abstract data type for lambda terms,
 consisting of six basic operations: `app`, `abs`, `var`, `resolve`,
-`destruct`, and `fv`.
+`destruct`, and `freevars`.
 
 This repository, first and foremost, presents the definitions of these
-operations.  Secondarily, it may (one day) contain implementations of
-this abstract data type (and possibly variations on it) in different
+operations.  Secondarily, it may one day contain implementations of
+this abstract data type, and possibly variations on it, in various
 programming languages.
 
 The version of the Lariat abstract data type defined by this document
@@ -17,6 +17,7 @@ is version 0.1.  To be promoted to 1.0 once vetted sufficiently.
 
 *   [Background](#background)
 *   [The Operations](#the-operations)
+*   [Stepping Back](#stepping-back)
 *   [Some Examples](#some-examples)
 *   [Discussion](#discussion)
 
@@ -51,12 +52,12 @@ But the point is, at some level of abstraction _it does not matter_ which
 approach is chosen _as long as_ the approach satisfies the essential properties
 that we require lambda terms to have.
 
-To this end we present this abstract data type for lambda terms, which we
+To this end, we present this abstract data type for lambda terms, which we
 call "Lariat", consisting of six operations.  The actual, concrete data type
-by which they are stored, and the actual, concrete mechanism by which names
+in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no real consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
-to their stated specification.
+to the stated specification.
 
 The Operations
 --------------
@@ -65,8 +66,8 @@ The Operations
 
 Given a name _n_, return a _free variable_ with the name _n_.
 
-(Note: A free variable is a term; it can be passed to any operation
-that expects a term.)
+> **Note**: A free variable is a term; it can be passed to any operation
+> that expects a term.
 
 ### `app(t1: term, t2: term): term`
 
@@ -81,11 +82,11 @@ variables named _n_ inside _t'_ have been replaced with
 bound variables.  These bound variables are bound to
 the returned abstraction term.
 
-(Note: a bound variable is a term, but the user cannot
-work with them directly.  A bound variable is always
-bound to an abstraction term.  In the case of `abs`,
-the abstraction term to which variables are bound, is
-the term returned by the operation.)
+> **Note**: a bound variable is a term, but the user cannot
+> work with bound variables directly.  A bound variable is always
+> bound to an abstraction term.  In the case of `abs`,
+> the abstraction term to which variables are bound, is
+> the term returned by the operation.
 
 ### `resolve(t1: term, t2: term): term`
 
@@ -94,16 +95,16 @@ not an abstraction term) or _t1'_, where _t1'_ is a version of
 _t1_ where all bound variables in _t1'_ that were bound to _t1_
 itself have been replaced by _t2_.
 
-(Note: as states above, a bound variable is always bound
-to an abstraction term.  The bound variables that are
-replaced by a `resolve` operation are always those that are
-bound to _t1_.)
+> **Note**: as stated above, a bound variable is always bound
+> to an abstraction term.  The bound variables that are
+> replaced by a `resolve` operation are always those that are
+> bound to _t1_.
 
-(Note: this operation was specifically not named `subst`,
-as `subst` is often described as replacing *free* variables,
-while this replaces bound ones.  It was also specifically not
-named `beta` or similar because it does not require _t1_ and _t2_
-to come from the same application term.)
+> **Note**: this operation was specifically not named `subst`,
+> as `subst` is often described as replacing *free* variables,
+> while this replaces bound ones.  It was also specifically not
+> named `beta` or similar because it does not require _t1_ and _t2_
+> to come from the same application term.
 
 ### `destruct(t: term, f1: fun, f2: fun, f3: fun): X`
 
@@ -120,60 +121,71 @@ the head of _t_ and _t2_ is the tail of _t_.
 
 If _t_ is an abstraction term, evaluate _f3_(_t_).
 
-(Note: the `destruct` operation's signature was abbreviated above to make
-it look less intimidating.  The full signature would be something like
-`destruct(t: term, f1: fun(n: name): X, f2: fun(t1: term, t2: term): X, f3: fun(t: term): X): X`.)
+> **Note**: the `destruct` operation's signature shown above was abbreviated to make
+> it look less intimidating.  The full signature would be something more like
+> 
+>     destruct(t: term, f1: fun(n: name): X, f2: fun(t1: term, t2: term): X, f3: fun(t: term): X): X
+> 
 
-(Note: `destruct` is a [destructorizer][] in the sense described
-in the linked article.  It is a slight variation on the conventional
-destructorizer pattern, but it is undoubtedly in the spirit of
-the thing.)
+> **Note**: `destruct` is a "destructorizer" in the sense described
+> in the [Destructorizers][] article.  It is a slight variation on
+> the conventional destructorizer pattern, but it is undoubtedly
+> in the spirit of the thing.
 
-(Note: while _f1_ and _f2_ "take apart" the term they are working
-on, _f3_ does not, because the only operation that is allowed to
-"take apart" an abstraction term, is `resolve`, and calling
-`resolve` involves a choice (what to resolve the bound variable
-to) and `destruct` cannot make this choice for you.)
+> **Note**: while _f1_ and _f2_ "take apart" the term they are working
+> on, _f3_ does not, because the only operation that is allowed to
+> "take apart" an abstraction term, is `resolve`, and calling
+> `resolve` involves a choice (what to resolve the bound variable
+> to) and `destruct` cannot make this choice for you.)
 
-### `fv(t: term): list(term)`
+### `freevars(t: term): list(term)`
 
 Given a term _t_, return a list of free variables contained in _t_.
 These free variables may be located at any depth inside _t_, including
 inside any and all abstraction terms contained in _t_.
 
-(Note: I wish this operation was not required, but it seems it is
-needed in order to do many practical things with `destruct`.  One
-would hope the list of free variables could be obtained by usage of
-`destruct` inside a recursive function, at it is simply a tree walk
-of the term.  But the only practical way to "take apart" an abstraction
-term is to `resolve` it will a known free variable.  But how do you
-pick that free variable, so that it will not collide with any of the
-free variables inside the term you are "taking apart"?  Short of
-devising some clever namespacing for names, we need to know what
-free variables are insie the term first, _before_ `resolve`-ing it.
-Thus `fv` exists to fulfil that purpose.)
+> **Note**: I wish this operation was not required, but it seems it is
+> needed in order to do many practical things with `destruct`.  One
+> would hope the list of free variables could be obtained by usage of
+> `destruct` inside a recursive function, at it is simply a tree walk
+> of the term.  But the only practical way to "take apart" an abstraction
+> term is to `resolve` it will a known free variable.  But how do you
+> pick that free variable, so that it will not collide with any of the
+> free variables inside the term you are "taking apart"?  Short of
+> devising some clever namespacing for names, we need to know what
+> free variables are insie the term first, _before_ `resolve`-ing it.
+> Thus `freevars` exists to fulfil that purpose.)
+
+Stepping Back
+-------------
+
+Now that we have given the operations, we can make some comments on them.
+
+This is an abstract data type for lambda _terms_, not the lambda
+_calculus_.  Naturally, one ought to be able to write a lambda calculus
+normalizer using these operations (and this will be one of our goals in
+the next section), but one is not restricted to that.  The lambda terms can be
+used for any purpose for which terms with name binding might prove useful.
+
+It is `destruct` that allows us to examine a lambda term.
 
 Some Examples
 -------------
 
-We'll now consider some examples.  But first, take note.
-This is an abstract data type for lambda _terms_, not the lambda
-_calculus_.  One can use these lambda terms for any purpose they
-like.  But naturally one ought to be able to write a lambda calculus
-evaluator (i.e. a reducer to normal form) using these operations.
-So, that will be our ultimate goal in this section.
-
-It is `destruct` that allows us to examine a lambda term.
-
-Suppose we want to write a function that tells us if a
+As a warm-up, suppose we want to write a function that tells us if a
 lambda term contains any free variable named `j`.
 
-In this implementation, we assume we have a value which is a
+In this implementation and those that follow, we will assume we have
+a simple functional language with the usual accoutrements (recursion,
+`if`, `let` and so forth).
+
+We'll also assume the existence of a value which is a
 _name supply_; we call a function `pick` on it, and it returns
 a name and new name supply.  Now, `pick` by itself does not ensure
 the name is "fresh" (that is, not already used in a lambda term
 that we're interested in), so we also inform `pick` of the set
-of names that we don't want it to return.  In this case that set is `j`.
+of names that we don't want it to return.  In this particular case,
+that set is the singleton set containing only `j`.
 
     let contains_j = fun(t, ns) ->
         destruct(r,
@@ -194,7 +206,8 @@ will not be among the names used by the free variables.
 (Because in practice we "take apart" abstraction terms
 by resolving them with a free variable.)
 
-So for that task, we have `fv`.
+So for that task, we have `freevars` as one of the intrinsic
+operations.
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
@@ -227,4 +240,4 @@ However, many operations one might like to perform on these lambda
 terms (such as reducing lambda terms to normal form, for instance)
 ought to be expressible using `destruct`, possibly recursively.
 
-[destructorizer]: http://github.com/catseye/Destructorizers
+[Destructorizers]: http://github.com/catseye/Destructorizers
