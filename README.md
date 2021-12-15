@@ -281,4 +281,4 @@ reducing it.
 From there it ought to be just a hop, a skip, and a jump
 to a proper lambda term normalizer.
 
-[Destructorizers]: http://github.com/catseye/Destructorizers
+[Destructorizers]: http://github.com/cpressey/Destructorizers
