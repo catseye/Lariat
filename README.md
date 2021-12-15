@@ -10,8 +10,8 @@ operations.  Secondarily, it may one day contain implementations of
 this abstract data type, and possibly variations on it, in various
 programming languages.
 
-The version of the Lariat abstract data type defined by this document
-is version 0.1.  To be promoted to 1.0 once vetted sufficiently.
+The version of the Lariat defined by this document is 0.1.  This
+version number will be promoted to 1.0 once vetted sufficiently.
 
 #### Table of Contents
 
@@ -19,7 +19,6 @@ is version 0.1.  To be promoted to 1.0 once vetted sufficiently.
 *   [The Operations](#the-operations)
 *   [Stepping Back](#stepping-back)
 *   [Some Examples](#some-examples)
-*   [Discussion](#discussion)
 
 Background
 ----------
@@ -69,10 +68,10 @@ Given a name _n_, return a _free variable_ with the name _n_.
 > **Note**: A free variable is a term; it can be passed to any operation
 > that expects a term.
 
-### `app(t1: term, t2: term): term`
+### `app(t: term, u: term): term`
 
-Given a term _t1_ and a term _t2_, return an _application term_
-which contains _t1_ as its first subterm and _t2_ as its second
+Given a term _t_ and a term _u_, return an _application term_
+which contains _t_ as its first subterm and _u_ as its second
 subterm.
 
 > **Note**: An application term is a term that is an
@@ -92,23 +91,27 @@ the returned abstraction term.
 > the abstraction term to which variables are bound, is
 > the term returned by the operation.
 
-### `resolve(t1: term, t2: term): term`
+> **Note**: an abstraction term contains one subterm.  This
+> subterm cannot be extracted directly, as it may contain bound
+> variables, which the user cannot work with directly.
 
-Given a term _t1_ and a term _t2_, return either _t1_ (if _t1_ is
-not an abstraction term) or _t1'_, where _t1'_ is a version of
-_t1_ where all bound variables in _t1'_ that were bound to _t1_
-itself have been replaced by _t2_.
+### `resolve(t: term, u: term): term`
+
+Given a term _t_ and a term _u_, return either _t_ (if _t_ is
+not an abstraction term) or _t_', where _t_' is a version of
+_t_ where all bound variables in _t_' that were bound to _t_
+itself have been replaced by _u_.
 
 > **Note**: as stated above, a bound variable is always bound
 > to an abstraction term.  The bound variables that are
 > replaced by a `resolve` operation are always those that are
-> bound to _t1_.
+> bound to _t_.
 
 > **Note**: this operation was specifically not named `subst`,
 > as `subst` is often described as replacing *free* variables,
-> while this replaces bound ones.  It was also specifically not
-> named `beta` or similar because it does not require _t1_ and _t2_
-> to come from the same application term.
+> while this operation replaces *bound* ones.  It was also
+> specifically not named `beta` because it does not require
+> that _t_ and _u_ come from the same application term.
 
 ### `destruct(t: term, f1: fun, f2: fun, f3: fun): X`
 
@@ -120,21 +123,16 @@ returning what it returns.
 If _t_ is a free variable, evaluate _f1_(_n_) where _n_ is the name
 of the free variable _t_.
 
-If _t_ is an application term, evaluate _f2_(t1, t2) where _t1_ is
-the head of _t_ and _t2_ is the tail of _t_.
+If _t_ is an application term, evaluate _f2_(_u_, _v_) where _u_ is
+the first subterm of _t_ and _v_ is the second subterm of _t_.
 
 If _t_ is an abstraction term, evaluate _f3_(_t_).
 
 > **Note**: the `destruct` operation's signature shown above was abbreviated to make
 > it look less intimidating.  The full signature would be something more like
 > 
->     destruct(t: term, f1: fun(n: name): X, f2: fun(t1: term, t2: term): X, f3: fun(t: term): X): X
+>     destruct(t: term, f1: fun(n: name): X, f2: fun(u: term, v: term): X, f3: fun(t: term): X): X
 > 
-
-> **Note**: `destruct` is a "destructorizer" in the sense described
-> in the [Destructorizers][] article.  It is a slight variation on
-> the conventional destructorizer pattern, but it is undoubtedly
-> in the spirit of the thing.
 
 > **Note**: while _f1_ and _f2_ "take apart" the term they are working
 > on, _f3_ does not, because the only operation that is allowed to
@@ -148,18 +146,6 @@ Given a term _t_, return a list of free variables contained in _t_.
 These free variables may be located at any depth inside _t_, including
 inside any and all abstraction terms contained in _t_.
 
-> **Note**: I wish this operation was not required, but it seems it is
-> needed in order to do many practical things with `destruct`.  One
-> would hope the list of free variables could be obtained by usage of
-> `destruct` inside a recursive function, at it is simply a tree walk
-> of the term.  But the only practical way to "take apart" an abstraction
-> term is to `resolve` it will a known free variable.  But how do you
-> pick that free variable, so that it will not collide with any of the
-> free variables inside the term you are "taking apart"?  Short of
-> devising some clever namespacing for names, we need to know what
-> free variables are insie the term first, _before_ `resolve`-ing it.
-> Thus `freevars` exists to fulfil that purpose.)
-
 Stepping Back
 -------------
 
@@ -171,10 +157,27 @@ normalizer using these operations (and this will be one of our goals in
 the next section), but one is not restricted to that.  The lambda terms can be
 used for any purpose for which terms with name binding might prove useful.
 
-It is `destruct` that allows us to examine a lambda term.
+It is `destruct` that allows us to examine a lambda term.  `destruct` is a
+"destructorizer" in the sense described in the [Destructorizers][] article.
+It is a slight variation on the conventional destructorizer pattern, as it
+does not "take apart" abstraction terms, but it is undoubtedly in the spirit
+of the thing.
+
+It is regrettable that `freevars` is an intrinsic operation rather than
+something that can be built as a recursive function that usese `destruct`,
+but it seems it is needed in order to use `destruct` with generality,
+for the following reasons.  The only practical way to "take apart" an abstraction
+term is to `resolve` it with a known free variable.  But how do you
+pick that free variable, so that it will not collide with any of the
+free variables inside the term you are "taking apart"?  Short of
+devising some clever namespacing for names, we need to know what
+free variables are insie the term first, _before_ `resolve`-ing it.
+Thus `freevars` exists to fulfil that purpose.
 
 Some Examples
 -------------
+
+### Example 1
 
 As a warm-up, suppose we want to write a function that tells us if a
 lambda term contains any free variable named `j`.
@@ -194,7 +197,7 @@ that set is the singleton set containing only `j`.
     let contains_j = fun(t, ns) ->
         destruct(r,
             fun(n) -> n == "j",
-            fun(t1, t2) -> contains_j(t1) || contains_j(t2),
+            fun(t, u) -> contains_j(t) || contains_j(u),
             fun(t) ->
                 let
                     (n, ns') = pick(ns, ~{"j"})
@@ -203,7 +206,9 @@ that set is the singleton set containing only `j`.
                     contains_j(t')
         )
 
-Next: What if we want to get the set of free variables present
+### Example 2
+
+What if we want to get the set of free variables present
 in a lambda term?  We ought to be able to do this, and yet,
 it's difficult unless we know of a name that we are certain
 will not be among the names used by the free variables.
@@ -212,6 +217,12 @@ by resolving them with a free variable.)
 
 So for that task, we have `freevars` as one of the intrinsic
 operations.
+
+TODO: instead have an example of using `freevars` and
+passing it to `pick` and walking down arbitrary abstraction
+terms this way.
+
+### Example 3
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
@@ -231,17 +242,36 @@ with the application term's tail.
             fun(t) -> t
         )
 
+### Example 4
+
 The next task would be to search through a lambda term,
-looking for a candidate application term to beta-reduce.
-This doesn't sound hard.  But is still not yet written
+looking for a candidate application term to reduce, and
+reducing it.
 
-Discussion
-----------
+    --
+    -- Returns [bool, term] where bool indicates "has rewritten"
+    --
+    let reduce = fun(t) ->
+        if beta_reducible(t) then
+            [true, beta(t)]
+        else
+            destruct(r,
+                fun(n) -> [false, var(n)],
+                fun(t, u) ->
+                    let
+                        r = reduce(t)
+                    in
+                        if r[0] then
+                            [true, app(r[1], u)]
+                        else
+                            let
+                                s = reduce(u)
+                            in
+                                [s[0], t, s[1]],
+                fun(t) -> [false, t]
+            )
 
-There is nothing preventing an abstract data type which is a
-proper superclass of this abstract data type, adding more operations.
-However, many operations one might like to perform on these lambda
-terms (such as reducing lambda terms to normal form, for instance)
-ought to be expressible using `destruct`, possibly recursively.
+From there it ought to be just a hop, a skip, and a jump
+to a proper lambda term normalizer.
 
 [Destructorizers]: http://github.com/catseye/Destructorizers
