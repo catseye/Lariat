@@ -26,36 +26,36 @@ Background
 
 There are several approaches for representing lambda terms in software.
 
-The naive approach is to represent them just as they are written on paper.  In this approach, if you see
-a variable, such as _x_, whether _x_ is free or bound depends on whether it is inside a lambda abstraction
+The naive approach is to represent them just as they are written on paper.  In this approach, whether
+a variable, such as _x_, is free or bound depends on whether it is inside a lambda abstraction
 λ _x_ or not.  If you need to manipulate it, you might need to rename it so that it doesn't conflict with
 another variable also called _x_ that is bound to a different lambda abstraction.
 
 This is tiresome and error-prone.  So other approaches were developed.
 
-One such approach is called De Bruijn indexes.  In this approach, variables are represented not by names,
-but by numbers.  The number indicates which lambda abstraction the variable is bound to, if any.  That is,
-a 1 indicates it is bound to the immediately enclosing lambda abstraction, a 2 indicates it is bound to
-the lambda abstraction just above that, and so on.  If the number exceeds the number of lambda abstractions
-which enclose the variable, it is a free variable.
+One such approach alternate is De Bruijn indexes, where variables are represented not by names,
+but by numbers.  The number indicates which lambda abstraction the variable is bound to, if any;
+a 1 indicates the immediately enclosing lambda abstraction, a 2 indicates the lambda abstraction
+just above that, and so on.  If the number exceeds the number of enclosing lambda abstractions,
+then it is a free variable.
 
-This, too, has some drawbacks, so people have devised a number of other approaches:
+But this, too, has some drawbacks, so people have devised a number of other approaches:
 
 *   "nominal techniques" (Gabbay and Pitts)
 *   "locally nameless" (various?)
 *   "maps" (Sato et al.)
 *   "bound" (Kmett)
 
-and so forth.
+among others.
 
-But the point is, at some level of abstraction _it does not matter_ which
-approach is chosen _as long as_ the approach satisfies the essential properties
-that we require lambda terms to have.
+But the point we would like to make is this:  At some level of abstraction _it does not matter_
+which approach is chosen _as long as_ the approach satisfies the essential properties
+that we require of lambda terms.
 
 To this end, we present this abstract data type for lambda terms, which we
-call "Lariat", consisting of six operations.  The actual, concrete data type
+call "Lariat", consisting of six operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
-become bound to terms, are of no real consequence (and may well be hidden
+become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
 
@@ -72,19 +72,23 @@ Given a name _n_, return a _free variable_ with the name _n_.
 ### `app(t1: term, t2: term): term`
 
 Given a term _t1_ and a term _t2_, return an _application term_
-which contains _t1_ as its head and _t2_ as its tail.
+which contains _t1_ as its first subterm and _t2_ as its second
+subterm.
+
+> **Note**: An application term is a term that is an
+> ordered pair of terms.
 
 ### `abs(n: name, t: term): term`
 
 Given a name _n_ and a term _t_, return an _abstraction term_
-containing _t'_, where _t'_ is a version of _t_ where all free
-variables named _n_ inside _t'_ have been replaced with
+containing _t_', where _t_' is a version of _t_ where all free
+variables named _n_ inside _t_' have been replaced with
 bound variables.  These bound variables are bound to
 the returned abstraction term.
 
 > **Note**: a bound variable is a term, but the user cannot
 > work with bound variables directly.  A bound variable is always
-> bound to an abstraction term.  In the case of `abs`,
+> bound to a particular abstraction term.  In the case of `abs`,
 > the abstraction term to which variables are bound, is
 > the term returned by the operation.
 
