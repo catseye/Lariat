@@ -5,10 +5,9 @@ Lariat
 consisting of six basic operations: `app`, `abs`, `var`, `resolve`,
 `destruct`, and `freevars`.
 
-This repository, first and foremost, presents the definitions of these
-operations.  Secondarily, it may one day contain implementations of
-this abstract data type, and possibly variations on it, in various
-programming languages.
+This repository presents the definition of these operations.  It may
+one day also contain implementations of this abstract data type, and
+possibly variations on it, in various programming languages.
 
 The version of the Lariat defined by this document is 0.1.  This
 version number will be promoted to 1.0 once vetted sufficiently.
@@ -52,7 +51,7 @@ which approach is chosen _as long as_ the approach satisfies the essential prope
 that we require of lambda terms.
 
 To this end, we present this abstract data type for lambda terms, which we
-call "Lariat", consisting of six operations.  The actual, concrete data structure
+call **Lariat**, consisting of six operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
@@ -154,25 +153,26 @@ Now that we have given the operations, we can make some comments on them.
 This is an abstract data type for lambda _terms_, not the lambda
 _calculus_.  Naturally, one ought to be able to write a lambda calculus
 normalizer using these operations (and this will be one of our goals in
-the next section), but one is not restricted to that.  The lambda terms can be
-used for any purpose for which terms with name binding might prove useful.
+the next section), but one is not restricted to that.  The terms
+constructed using the Lariat operations may be used for any purpose
+for which terms-with-name-binding might be useful.
 
 It is `destruct` that allows us to examine a lambda term.  `destruct` is a
 "destructorizer" in the sense described in the [Destructorizers][] article.
-It is a slight variation on the conventional destructorizer pattern, as it
-does not "take apart" abstraction terms, but it is undoubtedly in the spirit
-of the thing.
+It is a slight variation on the conventional destructorizer pattern
+described there, as it does not "take apart" abstraction terms, but it is
+undoubtedly in the spirit of the thing.
 
 It is regrettable that `freevars` is an intrinsic operation rather than
-something that can be built as a recursive function that usese `destruct`,
+something that can be built as a recursive function that uses `destruct`,
 but it seems it is needed in order to use `destruct` with generality,
 for the following reasons.  The only practical way to "take apart" an abstraction
 term is to `resolve` it with a known free variable.  But how do you
 pick that free variable, so that it will not collide with any of the
 free variables inside the term you are "taking apart"?  Short of
 devising some clever namespacing for names, we need to know what
-free variables are insie the term first, _before_ `resolve`-ing it.
-Thus `freevars` exists to fulfil that purpose.
+free variables are inside the term, _before_ `resolve`-ing it.
+Thus `freevars` exists to fulfill that purpose.
 
 Some Examples
 -------------
@@ -194,6 +194,9 @@ that we're interested in), so we also inform `pick` of the set
 of names that we don't want it to return.  In this particular case,
 that set is the singleton set containing only `j`.
 
+    --
+    -- UNTESTED
+    --
     let contains_j = fun(t, ns) ->
         destruct(r,
             fun(n) -> n == "j",
@@ -226,23 +229,26 @@ terms this way.
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
-and second to ensure the application term's head is an
-abstraction term.  Then we `resolve` the abstraction
-with the application term's tail.
+and second to ensure the application term's first subterm
+is an abstraction term.  Then we `resolve` the abstraction
+with the application term's second subterm.
 
+    --
+    -- UNTESTED
+    --
     let beta = fun(t) ->
         destruct(r,
             fun(n) -> var(n),
-            fun(t1, t2) ->
-                destruct(t1,
-                    fun(_) -> app(t1, t2),
-                    fun(_, _) -> app(t1, t2),
-                    fun(t) -> resolve(t, t2)
+            fun(u, v) ->
+                destruct(u,
+                    fun(_) -> app(u, v),
+                    fun(_, _) -> app(u, v),
+                    fun(u) -> resolve(u, v)
                 ),
             fun(t) -> t
         )
 
-### Example 4
+### Example 4 (untested)
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
@@ -250,24 +256,25 @@ reducing it.
 
     --
     -- Returns [bool, term] where bool indicates "has rewritten"
+    -- UNTESTED
     --
     let reduce = fun(t) ->
         if beta_reducible(t) then
             [true, beta(t)]
         else
-            destruct(r,
+            destruct(t,
                 fun(n) -> [false, var(n)],
-                fun(t, u) ->
+                fun(u, v) ->
                     let
-                        r = reduce(t)
+                        r = reduce(u)
                     in
                         if r[0] then
-                            [true, app(r[1], u)]
+                            [true, app(r[1], v)]
                         else
                             let
-                                s = reduce(u)
+                                s = reduce(v)
                             in
-                                [s[0], t, s[1]],
+                                [s[0], app(u, s[1])],
                 fun(t) -> [false, t]
             )
 
