@@ -4,7 +4,7 @@ import Prelude hiding (abs)
 
 data Term α = FreeVar α
             | App (Term α) (Term α)
-            | Abs α (Term α)
+            | Abs (Term α)
             | BoundVar Integer
     deriving (Show, Ord, Eq)
 
@@ -15,8 +15,12 @@ var n = FreeVar n
 app :: Term α -> Term α -> Term α
 app t u = App t u
 
-abs :: α -> Term α -> Term α
-abs n t = Abs n t  -- FIXME this is very wrong
+abs :: Eq α => α -> Term α -> Term α
+abs n t = Abs (bind n t 0) where
+    bind n (App t u) level = App (bind n t level) (bind n u level)
+    bind n (Abs t) level = Abs (bind n t (level + 1))
+    bind n t@(FreeVar m) level = if n == m then (BoundVar level) else t
+    bind _ t _ = t
 
 resolve :: Term α -> Term α -> Term α
 resolve t u = error "NotImplemented"
