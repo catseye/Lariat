@@ -25,8 +25,10 @@ abs n t = Abs (bind n t 0) where
 resolve :: Term α -> Term α -> Term α
 resolve t u = error "NotImplemented"
 
-destruct :: Term α -> (Term α -> τ) -> (Term α -> Term α -> τ) -> (Term α -> τ) -> τ
-destruct t f1 f2 f3 = error "NotImplemented"
+destruct :: Term α -> (α -> τ) -> (Term α -> Term α -> τ) -> (Term α -> τ) -> τ
+destruct (FreeVar n) f _ _ = f n
+destruct (App t u)   _ f _ = f t u
+destruct t@(Abs _)   _ _ f = f t
 
 freevars :: Term α -> [α]
 freevars t = []
