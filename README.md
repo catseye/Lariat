@@ -5,9 +5,11 @@ Lariat
 consisting of six basic operations: `app`, `abs`, `var`, `resolve`,
 `destruct`, and `freevars`.
 
-This repository presents the definition of these operations.  It may
-one day also contain implementations of this abstract data type, and
-possibly variations on it, in various programming languages.
+This repository presents the definition of these operations.  It also
+contains implementations of this abstract data type (and possibly one
+day variations on it) in various programming languages, including:
+
+*   [Haskell](impl/Haskell/)
 
 The version of the Lariat defined by this document is 0.1.  This
 version number will be promoted to 1.0 once vetted sufficiently.
