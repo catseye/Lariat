@@ -1,13 +1,13 @@
 module Data.Lariat (var, app, abs, resolve, destruct, freevars) where
 
 import Prelude hiding (abs)
+import Data.List (nub)
 
 data Term α = FreeVar α
             | App (Term α) (Term α)
             | Abs (Term α)
             | BoundVar Integer
     deriving (Show, Ord, Eq)
-
 
 var :: α -> Term α
 var n = FreeVar n
@@ -30,5 +30,9 @@ destruct (FreeVar n) f _ _ = f n
 destruct (App t u)   _ f _ = f t u
 destruct t@(Abs _)   _ _ f = f t
 
-freevars :: Term α -> [α]
-freevars t = []
+freevars :: Eq α => Term α -> [α]
+freevars t = nub (freevars' t) where
+    freevars' (FreeVar n) = [n]
+    freevars' (App t u) = (freevars' t) ++ (freevars' u)
+    freevars' (Abs t) = freevars' t
+    freevars' _ = []

@@ -13,3 +13,6 @@ testDestruct t = destruct t
 test2a = testDestruct (var "n")
 test2b = testDestruct (app (var "n") (var "m"))
 test2c = testDestruct (abs "n" (var "n"))
+
+test3a = freevars test1
+test3b = freevars (app (var "n") (var "n"))
