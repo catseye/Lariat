@@ -16,3 +16,7 @@ test2c = testDestruct (abs "n" (var "n"))
 
 test3a = freevars test1
 test3b = freevars (app (var "n") (var "n"))
+
+test4a = resolve (test1) (var "q")  -- test1 is not an abs so no change
+test4b = resolve (abs "n" (var "m")) (var "q")
+test4c = resolve (abs "n" (var "n")) (var "q")

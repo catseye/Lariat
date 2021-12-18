@@ -23,7 +23,12 @@ abs n t = Abs (bind n t 0) where
     bind _ t _ = t
 
 resolve :: Term α -> Term α -> Term α
-resolve t u = error "NotImplemented"
+resolve (Abs t) u = unbind t u 0 where
+    unbind (App t u) x level = App (unbind t x level) (unbind u x level)
+    unbind (Abs t) x level = Abs (unbind t x (level + 1))
+    unbind t@(BoundVar i) x level = if i == level then x else t
+    unbind t _ _ = t
+resolve t u = t
 
 destruct :: Term α -> (α -> τ) -> (Term α -> Term α -> τ) -> (Term α -> τ) -> τ
 destruct (FreeVar n) f _ _ = f n
