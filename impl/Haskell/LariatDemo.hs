@@ -48,3 +48,23 @@ pick exclude names =
         excluded = elem n exclude
     in
         if excluded then pick exclude names' else (n, names')
+
+--
+-- "Contains a free variable named _j_" example
+--
+
+contains j t names =
+    destruct t
+        (\n   -> n == j)
+        (\u v -> contains j u names || contains j v names)
+        (\u   ->
+            let
+                (n, names') = pick [j] names
+                t' = resolve t (var n)
+            in
+                contains j t' names'
+        )
+
+testContains1 = contains "n" test1 names                 -- True
+testContains2 = contains "m" test1 names                 -- False
+testContains3 = contains "n" (abs "n" (var "n")) names   -- False

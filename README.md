@@ -182,7 +182,8 @@ Some Examples
 ### Example 1
 
 As a warm-up, suppose we want to write a function that tells us if a
-lambda term contains any free variable named `j`.
+lambda term contains any free variable named (for the sake of
+concreteness, let's say) `j`.
 
 In this implementation and those that follow, we will assume we have
 a simple functional language with the usual accoutrements (recursion,
@@ -196,19 +197,16 @@ that we're interested in), so we also inform `pick` of the set
 of names that we don't want it to return.  In this particular case,
 that set is the singleton set containing only `j`.
 
-    --
-    -- UNTESTED
-    --
     let contains_j = fun(t, ns) ->
         destruct(r,
             fun(n) -> n == "j",
-            fun(t, u) -> contains_j(t) || contains_j(u),
+            fun(t, u) -> contains_j(t, ns) || contains_j(u, ns),
             fun(t) ->
                 let
                     (n, ns') = pick(ns, ~{"j"})
                     t' = resolve(t, var(n))
                 in
-                    contains_j(t')
+                    contains_j(t', ns')
         )
 
 ### Example 2
