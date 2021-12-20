@@ -233,10 +233,7 @@ and second to ensure the application term's first subterm
 is an abstraction term.  Then we `resolve` the abstraction
 with the application term's second subterm.
 
-    --
-    -- UNTESTED
-    --
-    let beta = fun(t) ->
+    let beta = fun(r) ->
         destruct(r,
             fun(n) -> var(n),
             fun(u, v) ->
@@ -248,7 +245,7 @@ with the application term's second subterm.
             fun(t) -> t
         )
 
-### Example 4 (untested)
+### Example 4
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
@@ -259,7 +256,7 @@ reducing it.
     -- UNTESTED
     --
     let reduce = fun(t) ->
-        if beta_reducible(t) then
+        if is_beta_reducible(t) then
             [true, beta(t)]
         else
             destruct(t,

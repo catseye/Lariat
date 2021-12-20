@@ -77,13 +77,27 @@ testContains3 = (contains "n" (abs "n" (var "n")) names)     == False
 --
 
 beta t = destruct t
-            (\n   -> var n)
-            (\u v -> destruct u
-                (\_   -> app u v)
-                (\_ _ -> app u v)
-                (\u   -> resolve u v)
-            )
-            (\u   -> u)
+    (\n   -> var n)
+    (\u v -> destruct u
+        (\_   -> app u v)
+        (\_ _ -> app u v)
+        (\u   -> resolve u v)
+    )
+    (\u   -> u)
 
 testBeta1 = (show $ beta testApp)                    == "FreeVar \"n\""
 testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
+testBeta3 = (show $ beta (var "j"))                  == "FreeVar \"j\""
+
+isBetaReducible t = destruct t
+    (\n   -> False)
+    (\u v -> destruct u
+        (\_   -> False)
+        (\_ _ -> False)
+        (\u   -> True)
+    )
+    (\u   -> False)
+
+testIsBeta1 = (isBetaReducible testApp)       == True
+testIsBeta2 = (isBetaReducible testAbs)       == False
+testIsBeta3 = (isBetaReducible (var "j"))     == False
