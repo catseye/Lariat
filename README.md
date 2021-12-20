@@ -271,7 +271,10 @@ reducing it.
                             let
                                 s = reduce(v)
                             in
-                                [s[0], app(u, s[1])],
+                                if s[0] then
+                                    [true, app(u, s[1])]
+                                else
+                                    [false, app(r[1], s[1])],
                 fun(t) -> [false, t]
             )
 

@@ -101,3 +101,20 @@ isBetaReducible t = destruct t
 testIsBeta1 = (isBetaReducible testApp)       == True
 testIsBeta2 = (isBetaReducible testAbs)       == False
 testIsBeta3 = (isBetaReducible (var "j"))     == False
+
+reduceOneTerm t =
+    if isBetaReducible t then (Right (beta t)) else destruct t
+        (\n   -> Left (var n))
+        (\u v ->
+            case reduceOneTerm u of
+                Right r -> Right (app r v)
+                Left f  ->
+                    case reduceOneTerm v of
+                        Right s -> Right (app u s)
+                        Left  g -> Left (app f g)
+        )
+        (\u   -> Left u)
+
+--
+-- TODO: tests for that
+--
