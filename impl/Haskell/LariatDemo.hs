@@ -9,7 +9,9 @@ import Data.Lariat (var, app, abs, resolve, destruct, freevars)
 -- (should really be unit tests; for now, run them manually)
 --
 
-test1 = app (abs "n" (var "n")) (var "n")
+testVar = (var "n")
+testAbs = (abs "n" (var "n"))
+testApp = app testAbs testVar
 
 testDestruct t = destruct t
                     (\n   -> "var:" ++ (show n))
@@ -20,12 +22,13 @@ test2a = testDestruct (var "n")
 test2b = testDestruct (app (var "n") (var "m"))
 test2c = testDestruct (abs "n" (var "n"))
 
-test3a = freevars test1
-test3b = freevars (app (var "n") (var "n"))
+test3a = (freevars testApp)                     == ["n"]
+test3b = (freevars testAbs)                     == []
+test3c = (freevars (app (var "n") (var "n")))   == ["n"]
 
-test4a = resolve (test1) (var "q")  -- test1 is not an abs so no change
-test4b = resolve (abs "n" (var "m")) (var "q")
-test4c = resolve (abs "n" (var "n")) (var "q")
+test4a = (show $ resolve (testApp) (var "q"))               == "App (Abs (BoundVar 0)) (FreeVar \"n\")"
+test4b = (show $ resolve (abs "n" (var "m")) (var "q"))     == "FreeVar \"m\""
+test4c = (show $ resolve (abs "n" (var "n")) (var "q"))     == "FreeVar \"q\""
 
 --
 -- Name supply
@@ -65,6 +68,22 @@ contains j t names =
                 contains j t' names'
         )
 
-testContains1 = contains "n" test1 names                 -- True
-testContains2 = contains "m" test1 names                 -- False
-testContains3 = contains "n" (abs "n" (var "n")) names   -- False
+testContains1 = (contains "n" testApp names)                 == True
+testContains2 = (contains "m" testApp names)                 == False
+testContains3 = (contains "n" (abs "n" (var "n")) names)     == False
+
+--
+-- "beta-reduce a term" example
+--
+
+beta t = destruct t
+            (\n   -> var n)
+            (\u v -> destruct u
+                (\_   -> app u v)
+                (\_ _ -> app u v)
+                (\u   -> resolve u v)
+            )
+            (\u   -> u)
+
+testBeta1 = (show $ beta testApp)                    == "FreeVar \"n\""
+testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
