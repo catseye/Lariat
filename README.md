@@ -18,8 +18,8 @@ version number will be promoted to 1.0 once vetted sufficiently.
 
 *   [Background](#background)
 *   [The Operations](#the-operations)
-*   [Stepping Back](#stepping-back)
 *   [Some Examples](#some-examples)
+*   [Discussion](#discussion)
 
 Background
 ----------
@@ -108,11 +108,12 @@ itself have been replaced by _u_.
 > replaced by a `resolve` operation are always those that are
 > bound to _t_.
 
-> **Note**: this operation was specifically not named `subst`,
-> as `subst` is often described as replacing *free* variables,
-> while this operation replaces *bound* ones.  It was also
-> specifically not named `beta` because it does not require
-> that _t_ and _u_ come from the same application term.
+> **Note**: this operation was specifically *not* named `subst`,
+> because the name `subst` is often given to a process that
+> replaces *free* variables, while this operation replaces
+> *bound* ones.  It was also specifically not named `beta`
+> because it does not require that _t_ and _u_ come from the same
+> application term.
 
 ### `destruct(t: term, f1: fun, f2: fun, f3: fun): X`
 
@@ -139,7 +140,8 @@ If _t_ is an abstraction term, evaluate _f3_(_t_).
 > on, _f3_ does not, because the only operation that is allowed to
 > "take apart" an abstraction term, is `resolve`, and calling
 > `resolve` involves a choice (what to resolve the bound variable
-> to) and `destruct` cannot make this choice for you.)
+> to) and `destruct` cannot make this choice for you.  For more on this,
+> see the discussion below.
 
 ### `freevars(t: term): list(term)`
 
@@ -147,37 +149,17 @@ Given a term _t_, return a list of free variables contained in _t_.
 These free variables may be located at any depth inside _t_, including
 inside any and all abstraction terms contained in _t_.
 
-Stepping Back
+Some Examples
 -------------
 
-Now that we have given the operations, we can make some comments on them.
-
-This is an abstract data type for lambda _terms_, not the lambda
+We will now give some concrete examples of how these operations
+can be used, but first, we would like to note that
+this is an abstract data type for lambda _terms_, not the lambda
 _calculus_.  Naturally, one ought to be able to write a lambda calculus
 normalizer using these operations (and this will be one of our goals in
 the next section), but one is not restricted to that.  The terms
 constructed using the Lariat operations may be used for any purpose
 for which terms-with-name-binding might be useful.
-
-It is `destruct` that allows us to examine a lambda term.  `destruct` is a
-"destructorizer" in the sense described in the [Destructorizers][] article.
-It is a slight variation on the conventional destructorizer pattern
-described there, as it does not "take apart" abstraction terms, but it is
-undoubtedly in the spirit of the thing.
-
-It is regrettable that `freevars` is an intrinsic operation rather than
-something that can be built as a recursive function that uses `destruct`,
-but it seems it is needed in order to use `destruct` with generality,
-for the following reasons.  The only practical way to "take apart" an abstraction
-term is to `resolve` it with a known free variable.  But how do you
-pick that free variable, so that it will not collide with any of the
-free variables inside the term you are "taking apart"?  Short of
-devising some clever namespacing for names, we need to know what
-free variables are inside the term, _before_ `resolve`-ing it.
-Thus `freevars` exists to fulfill that purpose.
-
-Some Examples
--------------
 
 ### Example 1
 
@@ -254,10 +236,12 @@ reducing it.
     --
     -- Returns [bool, term] where bool indicates "has rewritten"
     -- UNTESTED
-    --
-    let reduce = fun(t) ->
-        if is_beta_reducible(t) then
-            [true, beta(t)]
+    --`var`, `app`, and `abs` construct terms, while `resolve` and `destruct`
+take them apart.  Constructing terms is the easy part; it's taking them
+apart properly that's hard, and that's what `freevars` is there to help
+support.  For more on this, see the [Discussion](#discussion) section
+below.
+
         else
             destruct(t,
                 fun(n) -> [false, var(n)],
@@ -281,4 +265,68 @@ reducing it.
 From there it ought to be just a hop, a skip, and a jump
 to a proper lambda term normalizer.
 
-[Destructorizers]: http://github.com/cpressey/Destructorizers
+Discussion
+----------
+
+`var`, `app`, and `abs` construct terms, while `resolve` and `destruct`
+take them apart.  Constructing terms is the easy part; it's taking them
+apart properly that's hard, and that's what `freevars` is there to help
+support.
+
+`destruct` is a "destructorizer" in the sense described in 
+[this article on Destructorizers](http://github.com/cpressey/Destructorizers).
+It is a slight variation on the conventional destructorizer pattern
+described there, as it does not "take apart" abstraction terms, but it is
+undoubtedly in the spirit of the thing.
+
+It is regrettable that `freevars` is an intrinsic operation rather than
+something that can be built as a recursive function that uses `destruct`,
+but it seems it is needed in order to use `destruct` with generality,
+for the following reasons.  The only practical way to "take apart" an abstraction
+term is to `resolve` it with a known free variable.  But how do you
+pick that free variable, so that it will not collide with any of the
+free variables inside the term you are "taking apart"?  Short of
+devising some clever namespacing for names, we need to know what
+free variables are inside the term, _before_ `resolve`-ing it.
+Thus `freevars` exists to fulfill that purpose.
+
+In this, there seems to be a certain irony.  It seems like it's not
+possible to escape the basic complexities of name binding, that is, of
+capture-avoiding substitution.
+
+What I mean is that the naive implementation of name binding requires
+a supply of fresh names to which bound variables can be renamed, to
+avoid name clashes; and even though Lariat has hidden this under a
+layer of abstraction, it still requires a supply of fresh names (used
+in conjunction with `freevars`) to properly examine an arbitrary
+lambda term.
+
+(Incidentally, if one were to write a lambda normalizer that reduces
+in an innermost fashion, one would need to write it using a name supply
+and `freevars`, because it would need to take apart abstractions to see
+if there is anything inside them that needs to be reduced.)
+
+Also, when working with lambda terms, one is often concerned with
+comparing two lambda terms for equality, modulo renaming of bound
+variables.  We haven't introduced such an operation because it should
+be possible to build such an operation using `destruct`; basically,
+render the two terms as text (or some other concrete representation)
+using the same name supply, then compare the texts for equality.
+
+The above two paragraphs suggest why you would not want to use this
+abstract data type in practice: it may capture the semantics, but
+it's not designed for efficiency.
+
+Most of the inefficiency is presented by `destruct`.  Having to
+`resolve` an abstraction in order to "see inside" it attractively
+abstract, but some way to "see inside" a term directly, including
+its bound variables (perhaps without resolving them to anything),
+would be more efficient.  The danger with bound variables, after
+all, is not in merely seeing them, rather it's in supplying them in
+a context that changes their meaning.  (All the same, one would want
+to be able to retain them, i.e. continue to supply them in contexts
+where they do not change their meaning, for example when
+transforming a lambda term.)
+
+So perhaps in a future version of Lariat, `destruct` could work
+a little differently and/or be complemented by a `traverse` operation.
