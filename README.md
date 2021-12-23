@@ -299,10 +299,10 @@ layer of abstraction, it still requires a supply of fresh names (used
 in conjunction with `freevars`) to properly examine an arbitrary
 lambda term.
 
-(Incidentally, if one were to write a lambda normalizer that reduces
+Incidentally, if one were to write a lambda normalizer that reduces
 in an innermost fashion, one would need to write it using a name supply
 and `freevars`, because it would need to take apart abstractions to see
-if there is anything inside them that needs to be reduced.)
+if there is anything inside them that needs to be reduced.
 
 Also, when working with lambda terms, one is often concerned with
 comparing two lambda terms for equality, modulo renaming of bound
@@ -320,11 +320,18 @@ Most of the inefficiency is presented by `destruct`.  Having to
 abstract, but some way to "see inside" a term directly, including
 its bound variables (perhaps without resolving them to anything),
 would be more efficient.  The danger with bound variables, after
-all, is not in merely seeing them, rather it's in supplying them in
+all, is not in merely seeing them, rather, it's in supplying them in
 a context that changes their meaning.  (All the same, one would want
-to be able to retain them, i.e. continue to supply them in contexts
-where they do not change their meaning, for example when
+the option of retaining them, i.e. to continue to supply them in
+contexts where they *do not* change their meaning, for example when
 transforming a lambda term.)
 
 So perhaps in a future version of Lariat, `destruct` could work
 a little differently and/or be complemented by a `traverse` operation.
+
+We have not given a definition of what a name is.  The only restriction
+is that two names must be comparable for equality (in order that `abs`
+can properly look for free variables with the same name as the given
+name, within the term that it's given.)  While this too may be
+attractively abstract, it no doubt feeds into the problems described
+in the preceding paragraphs.
