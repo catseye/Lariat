@@ -236,12 +236,10 @@ reducing it.
     --
     -- Returns [bool, term] where bool indicates "has rewritten"
     -- UNTESTED
-    --`var`, `app`, and `abs` construct terms, while `resolve` and `destruct`
-take them apart.  Constructing terms is the easy part; it's taking them
-apart properly that's hard, and that's what `freevars` is there to help
-support.  For more on this, see the [Discussion](#discussion) section
-below.
-
+    --
+    let reduce = fun(t) ->
+        if is_beta_reducible(t) then
+            [true, beta(t)]
         else
             destruct(t,
                 fun(n) -> [false, var(n)],
