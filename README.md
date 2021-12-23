@@ -235,7 +235,6 @@ reducing it.
 
     --
     -- Returns [bool, term] where bool indicates "has rewritten"
-    -- UNTESTED
     --
     let reduce = fun(t) ->
         if is_beta_reducible(t) then

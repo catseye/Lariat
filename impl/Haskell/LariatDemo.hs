@@ -102,19 +102,38 @@ testIsBeta1 = (isBetaReducible testApp)       == True
 testIsBeta2 = (isBetaReducible testAbs)       == False
 testIsBeta3 = (isBetaReducible (var "j"))     == False
 
-reduceOneTerm t =
+reduceOnce t =
     if isBetaReducible t then (Right (beta t)) else destruct t
         (\n   -> Left (var n))
         (\u v ->
-            case reduceOneTerm u of
+            case reduceOnce u of
                 Right r -> Right (app r v)
                 Left f  ->
-                    case reduceOneTerm v of
+                    case reduceOnce v of
                         Right s -> Right (app u s)
                         Left  g -> Left (app f g)
         )
         (\u   -> Left u)
 
---
--- TODO: tests for that
---
+testReduceOnce1 = (show $ reduceOnce testApp)          == "Right (FreeVar \"n\")"
+testReduceOnce2 = (show $ reduceOnce testAbs)          == "Left (Abs (BoundVar 0))"
+testReduceOnce3 = (show $ reduceOnce (var "j"))        == "Left (FreeVar \"j\")"
+
+testReduceOnce4 =
+    let
+       t = (app (app (abs "j" (var "j")) (abs "j" (var "j"))) (var "n"))
+    in
+       (show $ reduceOnce t) == "Right (App (Abs (BoundVar 0)) (FreeVar \"n\"))"
+
+testReduceOnce5 =
+    let
+       t = (app (app (abs "j" (var "j")) (abs "j" (var "j"))) (var "n"))
+       (Right t') = reduceOnce t
+    in
+       (show $ reduceOnce t') == "Right (FreeVar \"n\")"
+
+testReduceOnce6 =
+    let
+       t = (app (var "k") (app (abs "j" (var "j")) (var "m")))
+    in
+       (show $ reduceOnce t) == "Right (App (FreeVar \"k\") (FreeVar \"m\"))"

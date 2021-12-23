@@ -30,7 +30,7 @@ resolve (Abs t) u = unbind t u 0 where
     unbind t _ _ = t
 resolve t u = t
 
-destruct :: Term α -> (α -> τ) -> (Term α -> Term α -> τ) -> (Term α -> τ) -> τ
+destruct :: Term α -> (α -> β) -> (Term α -> Term α -> β) -> (Term α -> β) -> β
 destruct (FreeVar n) f _ _ = f n
 destruct (App t u)   _ f _ = f t u
 destruct t@(Abs _)   _ _ f = f t
