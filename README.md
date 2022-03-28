@@ -28,8 +28,9 @@ There are several approaches for representing lambda terms in software.
 
 The naive approach is to represent them just as they are written on paper.  In this approach, whether
 a variable, such as _x_, is free or bound depends on whether it is inside a lambda abstraction
-λ _x_ or not.  If you need to manipulate it, you might need to rename it so that it doesn't conflict with
-another variable also called _x_ that is bound to a different lambda abstraction.
+λ _x_ or not.  If you need to manipulate it (or the abstraction it's bound to), you might need
+to rename it so that it doesn't conflict with another variable also called _x_ that is bound
+to a different lambda abstraction.
 
 This is tiresome and error-prone.  So other approaches were developed.
 
@@ -69,13 +70,17 @@ Given a name _n_, return a _free variable_ with the name _n_.
 > **Note**: A free variable is a term; it can be passed to any operation
 > that expects a term.
 
+> **Note**: A name is an almost-entirely abstract object; the only operation
+> names must support is comparison for equality.  (This is true in Lariat 0.1,
+> but is not likely to remain the case in Lariat 0.2.)
+
 ### `app(t: term, u: term): term`
 
 Given a term _t_ and a term _u_, return an _application term_
 which contains _t_ as its first subterm and _u_ as its second
 subterm.
 
-> **Note**: An application term is a term that is an
+> **Note**: An application term is a term that behaves just as an
 > ordered pair of terms.
 
 ### `abs(n: name, t: term): term`
@@ -90,7 +95,7 @@ the returned abstraction term.
 > work with bound variables directly.  A bound variable is always
 > bound to a particular abstraction term.  In the case of `abs`,
 > the abstraction term to which variables are bound, is
-> the term returned by the operation.
+> the term returned by the `abs` operation.
 
 > **Note**: an abstraction term contains one subterm.  This
 > subterm cannot be extracted directly, as it may contain bound
@@ -153,11 +158,11 @@ Some Examples
 -------------
 
 We will now give some concrete examples of how these operations
-can be used, but first, we would like to note that
+can be used, but first, we would like to emphasize that
 this is an abstract data type for lambda _terms_, not the lambda
 _calculus_.  Naturally, one ought to be able to write a lambda calculus
 normalizer using these operations (and this will be one of our goals in
-the next section), but one is not restricted to that.  The terms
+the next section), but one is not restricted to that activity.  The terms
 constructed using the Lariat operations may be used for any purpose
 for which terms-with-name-binding might be useful.
 
@@ -287,9 +292,9 @@ devising some clever namespacing for names, we need to know what
 free variables are inside the term, _before_ `resolve`-ing it.
 Thus `freevars` exists to fulfill that purpose.
 
-In this, there seems to be a certain irony.  It seems like it's not
-possible to escape the basic complexities of name binding, that is, of
-capture-avoiding substitution.
+In this, there seems to be a certain irony.  It seems like there is
+a basic complexity to capture-avoiding substitution, and that it's not
+actually possible to escape it.
 
 What I mean is that the naive implementation of name binding requires
 a supply of fresh names to which bound variables can be renamed, to
@@ -315,11 +320,11 @@ abstract data type in practice: it may capture the semantics, but
 it's not designed for efficiency.
 
 Most of the inefficiency is presented by `destruct`.  Having to
-`resolve` an abstraction in order to "see inside" it attractively
+`resolve` an abstraction in order to "see inside" it may be attractively
 abstract, but some way to "see inside" a term directly, including
 its bound variables (perhaps without resolving them to anything),
 would be more efficient.  The danger with bound variables, after
-all, is not in merely seeing them, rather, it's in supplying them in
+all, is not in merely *seeing* them; rather, it's in supplying them in
 a context that changes their meaning.  (All the same, one would want
 the option of retaining them, i.e. to continue to supply them in
 contexts where they *do not* change their meaning, for example when
