@@ -11,7 +11,7 @@ day variations on it) in various programming languages, including:
 
 *   [Haskell](impl/Haskell/)
 
-The version of the Lariat defined by this document is 0.1.  This
+The version of the Lariat defined by this document is 0.2.  This
 version number will be promoted to 1.0 once vetted sufficiently.
 
 #### Table of Contents
@@ -60,8 +60,44 @@ become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
 
+Names
+-----
+
+In any explication of name binding we must deal with names.  In Lariat 0.1, names
+were left almost entirely undefined; the only operation they were required to
+support was comparison of two names for equality.  While this extreme level of
+abstraction might be attractive from a theoretical perspective, it introduced
+complications and awkwardness into practical use of the abstract data type.
+
+The names used in Lariat 0.2 are defined to be _qualified names_.  A qualified
+name is an ordered list of _name segments_, where each name segment is what a
+name was in Lariat 0.1, i.e. the only operation we require name segments to
+support is comparison of two name segments for equality.  (Comparing two
+qualified names for equality is straightforwardly derived from this.)
+
+The client of the Lariat ADT is not, by themselves, required to qualify any
+names; if each qualified name they supply in their usage consists of only a
+single name segment, that's fine.
+
+However, qualified names permit the definition of a simple algorithm for
+generating a fresh name, i.e. a name which does not appear in a given set
+of names.  To wit,
+
+*   pick the longest qualified name from the set;
+*   prepend an arbitrary name segment to that qualified name.
+
+If there are more than one longest names in the set, pick one arbitrarily.
+
+In addition, a simple way to pick an arbitrary name segment to prepend to
+it, is to look at the leftmost name segment already in the qualified name.
+
+When we use the phrase "select a fresh name relative to set S of names" in
+the sequel, it can be assumed to use this algorithm.
+
 The Operations
 --------------
+
+_TO BE EDITED_
 
 ### `var(n: name): term`
 
@@ -156,6 +192,8 @@ inside any and all abstraction terms contained in _t_.
 
 Some Examples
 -------------
+
+_TO BE EDITED_
 
 We will now give some concrete examples of how these operations
 can be used, but first, we would like to emphasize that
@@ -269,6 +307,8 @@ to a proper lambda term normalizer.
 
 Discussion
 ----------
+
+_TO BE EDITED_
 
 `var`, `app`, and `abs` construct terms, while `resolve` and `destruct`
 take them apart.  Constructing terms is the easy part; it's taking them
