@@ -238,15 +238,21 @@ value.  We can call this operation `resolve`.
             fun(u, n) -> abs(n, replace_all(u, m, x))
         )
 
-### Example 4
+Note that this operation was specifically *not* called `subst`,
+because the name `subst` is often given to a process that
+replaces *free* variables, while this operation replaces
+*bound* ones.  It was also specifically not named `beta`
+because it does not require that _t_ and _x_ come from the same
+application term.
 
-_TO BE REWRITTEN_
+### Example 4
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
 and second to ensure the application term's first subterm
-is an abstraction term.  Then we `resolve` the abstraction
-with the application term's second subterm.
+is an abstraction term.  Then we use `resolve`, above, to
+plug the application term's second subterm into the
+abstraction term.
 
     let beta = fun(r) ->
         destruct(r,
@@ -260,9 +266,11 @@ with the application term's second subterm.
             fun(t) -> t
         )
 
-### Example 5
+In fact, we could merge this implementation with the
+implementation of `resolve` and this would save a call
+to `destruct`.
 
-_TO BE REWRITTEN_
+### Example 5
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
@@ -295,7 +303,16 @@ reducing it.
             )
 
 From there it ought to be just a hop, a skip, and a jump
-to a proper lambda term normalizer.
+to a proper lambda term normalizer:
+
+    let normalize(t) ->
+        let
+            r = reduce(t)
+        in
+            if r[0] then
+                normalize(r[1])
+            else
+                t
 
 Discussion
 ----------
