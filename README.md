@@ -110,9 +110,8 @@ Given a name _n_, return a _free variable_ with the name _n_.
 > **Note**: A free variable is a term; it can be passed to any operation
 > that expects a term.
 
-> **Note**: A name is an almost-entirely abstract object; the only operation
-> names must support is comparison for equality.  (This is true in Lariat 0.1,
-> but is not likely to remain the case in Lariat 0.2.)
+> **Note**: A name is a qualified name, described in the section "Names"
+> above this one.
 
 ### `app(t: term, u: term): term`
 
@@ -173,8 +172,6 @@ _u_ itself have been replaced by _n_, where _n_ is a fresh name
 Some Examples
 -------------
 
-_TO BE REWRITTEN_
-
 We will now give some concrete examples of how these operations
 can be used, but first, we would like to emphasize that
 this is an abstract data type for lambda _terms_, not the lambda
@@ -194,43 +191,38 @@ In this implementation and those that follow, we will assume we have
 a simple functional language with the usual accoutrements (recursion,
 `if`, `let` and so forth).
 
-We'll also assume the existence of a value which is a
-_name supply_; we call a function `pick` on it, and it returns
-a name and new name supply.  Now, `pick` by itself does not ensure
-the name is "fresh" (that is, not already used in a lambda term
-that we're interested in), so we also inform `pick` of the set
-of names that we don't want it to return.  In this particular case,
-that set is the singleton set containing only `j`.
+We also rely on the fact that, when we `destruct` an abstraction
+term, the fresh variable it will pick, will not be `j`.  This is true
+whether or not `j` is one of the free variables in the abstraction
+term being destructed, because according to the algorithm, a fresh
+variable's qualified name will always have more than one name segment.
 
-    let contains_j = fun(t, ns) ->
-        destruct(r,
+    let contains_j = fun(t) ->
+        destruct(t,
             fun(n) -> n == "j",
-            fun(t, u) -> contains_j(t, ns) || contains_j(u, ns),
-            fun(t) ->
-                let
-                    (n, ns') = pick(ns, ~{"j"})
-                    t' = resolve(t, var(n))
-                in
-                    contains_j(t', ns')
+            fun(u, v) -> contains_j(u) || contains_j(v),
+            fun(u, n) -> contains_j(u)
         )
 
 ### Example 2
 
-What if we want to get the set of free variables present
-in a lambda term?  We ought to be able to do this, and yet,
-it's difficult unless we know of a name that we are certain
-will not be among the names used by the free variables.
-(Because in practice we "take apart" abstraction terms
-by resolving them with a free variable.)
+A common task is to obtain the set of free variables present
+in a lambda term.  This is not difficult; we only need to
+keep track of the new free variables we introduce ourselves
+when we `destruct` an abstraction term.
 
-So for that task, we have `freevars` as one of the intrinsic
-operations.
+_TO BE REWRITTEN_
 
-TODO: instead have an example of using `freevars` and
-passing it to `pick` and walking down arbitrary abstraction
-terms this way.
+    let freevars = fun(t, ours) ->
+        destruct(t,
+            fun(n) -> {n},
+            fun(u, v) -> freevars(u) + freevars(v),
+            fun(u, n) -> ???
+        )
 
 ### Example 3
+
+_TO BE REWRITTEN_
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
@@ -251,6 +243,8 @@ with the application term's second subterm.
         )
 
 ### Example 4
+
+_TO BE REWRITTEN_
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
