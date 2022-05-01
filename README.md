@@ -211,16 +211,34 @@ in a lambda term.  This is not difficult; we only need to
 keep track of the new free variables we introduce ourselves
 when we `destruct` an abstraction term.
 
-_TO BE REWRITTEN_
-
     let freevars = fun(t, ours) ->
         destruct(t,
-            fun(n) -> {n},
-            fun(u, v) -> freevars(u) + freevars(v),
-            fun(u, n) -> ???
+            fun(n) -> if n in ours then {} else {n},
+            fun(u, v) -> freevars(u, ours) + freevars(v, ours),
+            fun(u, n) -> freevars(u, ours + {n})
         )
 
 ### Example 3
+
+Given an abstraction term and a value, return a version of
+the body of the abstraction term where every instance of the
+variable bound to the abstraction term is replaced by the given
+value.  We can call this operation `resolve`.
+
+    let resolve = fun(t, x) ->
+        destruct(t,
+            fun(n) -> t,
+            fun(u, v) -> t,
+            fun(u, n) -> replace_all(u, n, x)
+        )
+    where replace_all = fun(t, m, x) ->
+        destruct(t,
+            fun(n) -> if n == m then v else n,
+            fun(u, v) -> app(replace_all(u, m, x), replace_all(v, m, x))
+            fun(u, n) -> abs(n, replace_all(u, m, x))
+        )
+
+### Example 4
 
 _TO BE REWRITTEN_
 
@@ -242,7 +260,7 @@ with the application term's second subterm.
             fun(t) -> t
         )
 
-### Example 4
+### Example 5
 
 _TO BE REWRITTEN_
 
