@@ -77,7 +77,7 @@ specify that names must support the following two operations:
 ### `equal(n: name, m: name): boolean`
 
 Given a name _n_ and a name _m_, return true if they are identical names,
-or return false otherwise.
+otherwise return false.
 
 ### `fresh(ns: set of name): name`
 
@@ -89,7 +89,7 @@ only care about the guarantee that it is not a member of _ns_.  For
 discussion on implementation, see [Appendix A](#appendix-a).
 
 The operation should be deterministic in the sense that, given the
-same set, it should return the same name.
+same set of names, it should always return the same fresh name.
 
 > **Note**: It is not required that the `fresh` operation be
 > exposed to the user; it is, rather, a structural requirement
@@ -105,17 +105,12 @@ same set, it should return the same name.
 The Operations
 --------------
 
-_YET TO BE FINALIZED_
-
 ### `var(n: name): term`
 
 Given a name _n_, return a _free variable_ with the name _n_.
 
 > **Note**: A free variable is a term; it can be passed to any operation
 > that expects a term.
-
-> **Note**: A name is a qualified name, described in the section "Names"
-> above this one.
 
 ### `app(t: term, u: term): term`
 
@@ -187,33 +182,11 @@ for which terms-with-name-binding might be useful.
 
 ### Example 1
 
-As a warm-up, suppose we want to write a function that tells us if a
-lambda term contains any free variable named (for the sake of
-concreteness, let's say) `j`.
-
-In this implementation and those that follow, we will assume we have
-a simple functional language with the usual accoutrements (recursion,
-`if`, `let` and so forth).
-
-We also rely on the fact that, when we `destruct` an abstraction
-term, the fresh variable it will pick, will not be `j`.  This is true
-whether or not `j` is one of the free variables in the abstraction
-term being destructed, because according to the algorithm, a fresh
-variable's qualified name will always have more than one name segment.
-
-    let contains_j = fun(t) ->
-        destruct(t,
-            fun(n) -> n == "j",
-            fun(u, v) -> contains_j(u) || contains_j(v),
-            fun(u, n) -> contains_j(u)
-        )
-
-### Example 2
-
 A common task is to obtain the set of free variables present
 in a lambda term.  This is not difficult; we only need to
 keep track of the new free variables we introduce ourselves
-when we `destruct` an abstraction term.
+when we `destruct` an abstraction term, and make sure not to
+include any of them when we report the free variables we found.
 
     let freevars = fun(t, ours) ->
         destruct(t,
@@ -222,7 +195,7 @@ when we `destruct` an abstraction term.
             fun(u, n) -> freevars(u, ours + {n})
         )
 
-### Example 3
+### Example 2
 
 Given an abstraction term and a value, return a version of
 the body of the abstraction term where every instance of the
@@ -249,7 +222,7 @@ replaces *free* variables, while this operation replaces
 because it does not require that _t_ and _x_ come from the same
 application term.
 
-### Example 4
+### Example 3
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
@@ -274,7 +247,7 @@ In fact, we could merge this implementation with the
 implementation of `resolve` and this would save a call
 to `destruct`.
 
-### Example 5
+### Example 4
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
@@ -321,14 +294,15 @@ to a proper lambda term normalizer:
 Discussion
 ----------
 
-_YET TO BE FINALIZED_
-
 `var`, `app`, and `abs` construct terms, while `destruct` takes them apart.
 Constructing terms is the easy part; it's taking them apart properly that's
 hard.
 
 `destruct` is a "destructorizer" in the sense described in 
 [this article on Destructorizers](http://github.com/cpressey/Destructorizers).
+In fact, this use case of "taking apart" lambda terms was one
+of the major motivations for formulating the destructorizer
+concept.
 
 When working with lambda terms, one is often concerned with
 comparing two lambda terms for equality, modulo renaming of bound
@@ -337,14 +311,20 @@ be possible to build such an operation using `destruct`; basically,
 render the two terms as text (or some other concrete representation),
 then compare the texts for equality.
 
+But of course such an operation could be provided as a native
+operation for performance or convenience.  Similarly, although
+we have shown that we can implement `freevars` using the operations
+of the abstract data type, it is expected that it would already
+be implemented in the implementation of the abstract data type
+(to correctly implement `destruct`), so could be exposed to the
+user as well.
+
 Appendices
 ----------
 
 ### Appendix A
 
 #### On the implementation of names.
-
-_TO BE REWRITTEN_
 
 One way to implement names as defined in Lariat 0.2 is to use _qualified names_.
 A qualified name is an ordered list of _name segments_, where each name segment
@@ -367,3 +347,7 @@ If there are more than one longest names in the set, pick one arbitrarily.
 
 In addition, a simple way to pick an arbitrary name segment to prepend to
 it, is to look at the leftmost name segment already in the qualified name.
+
+So we can assume an algorithm like this is in use.  But ultimately, any
+implementation which satisfies the two operations required of names
+(`equal` and `fresh`) is acceptable.
