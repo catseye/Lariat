@@ -233,7 +233,7 @@ value.  We can call this operation `resolve`.
         )
     where replace_all = fun(t, m, x) ->
         destruct(t,
-            fun(n) -> if n == m then v else n,
+            fun(n) -> if n == m then x else var(n),
             fun(u, v) -> app(replace_all(u, m, x), replace_all(v, m, x))
             fun(u, n) -> abs(n, replace_all(u, m, x))
         )
