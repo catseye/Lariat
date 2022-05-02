@@ -4,7 +4,8 @@ Lariat
 _Version 0.2_
 
 **Lariat** is a project to define an abstract data type for lambda terms,
-consisting of four basic operations: `app`, `abs`, `var`, and `destruct`.
+consisting of six basic operations: `equal` and `fresh` (on names), and
+`app`, `abs`, `var`, and `destruct` (on terms).
 
 This repository presents the definition of these operations.  It also
 contains implementations of this abstract data type (and possibly one
@@ -55,7 +56,7 @@ which approach is chosen _as long as_ the approach satisfies the essential prope
 that we require of lambda terms.
 
 To this end, we present this abstract data type for lambda terms, which we
-call **Lariat**, consisting of four operations.  The actual, concrete data structure
+call **Lariat**, consisting of six operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
@@ -70,33 +71,36 @@ support was comparison of two names for equality.  While this extreme level of
 abstraction might be attractive from a theoretical perspective, it introduced
 complications and awkwardness into practical use of the abstract data type.
 
-The names used in Lariat 0.2 are defined to be _qualified names_.  A qualified
-name is an ordered list of _name segments_, where each name segment is what a
-name was in Lariat 0.1, i.e. the only operation we require name segments to
-support is comparison of two name segments for equality.  (Comparing two
-qualified names for equality is straightforwardly derived from this.)
+In Lariat 0.2, names are treated as abstract objects much like terms, and we
+specify that names must support the following two operations:
 
-The client of the Lariat ADT is not, by themselves, required to qualify any
-names; if each qualified name they supply in their usage consists of only a
-single name segment, that's fine.
+### `equal(n: name, m: name): boolean`
 
-However, qualified names permit the definition of a simple algorithm for
-generating a fresh name, i.e. a name which does not appear in a given set
-of names.  To wit,
+Given a name _n_ and a name _m_, return true if they are identical names,
+or return false otherwise.
 
-*   pick the longest qualified name from the set;
-*   prepend an arbitrary name segment to that qualified name.
+### `fresh(ns: set of name): name`
 
-If there are more than one longest names in the set, pick one arbitrarily.
+Given a set of names _ns_, return a name which does not occur in _ns_.
+We say this returned name is "fresh for _ns_".
 
-In addition, a simple way to pick an arbitrary name segment to prepend to
-it, is to look at the leftmost name segment already in the qualified name.
+The means by which the fresh name is generated is abstracted away; we
+only care about the guarantee that it is not a member of _ns_.  For
+discussion on implementation, see [Appendix A](#appendix-a).
 
-When we use the phrase "select a fresh name relative to set S of names" in
-the sequel, it can be assumed that this algorithm is used.  It is not
-_required_ that this algorithm be used; in the spirit of abstraction, any
-algorithm that gets you a fresh name in this situation is sufficient; but
-in the absence of any supplied algorithm, we have a default.
+The operation should be deterministic in the sense that, given the
+same set, it should return the same name.
+
+> **Note**: It is not required that the `fresh` operation be
+> exposed to the user; it is, rather, a structural requirement
+> of a correct implementation of `destruct`, below.
+
+> **Note**: Beyond these two operations, it would be not unexpected that an
+> implementation of Lariat would provide other operations such as constructing
+> a new name from a textual representation, rendering a given name to
+> a canonical textual representation, and suchlike.  From the perspective
+> of Lariat itself these are ancillary operations, and as such will not be
+> defined in this document.
 
 The Operations
 --------------
@@ -332,3 +336,34 @@ variables.  We haven't introduced such an operation because it should
 be possible to build such an operation using `destruct`; basically,
 render the two terms as text (or some other concrete representation),
 then compare the texts for equality.
+
+Appendices
+----------
+
+### Appendix A
+
+#### On the implementation of names.
+
+_TO BE REWRITTEN_
+
+One way to implement names as defined in Lariat 0.2 is to use _qualified names_.
+A qualified name is an ordered list of _name segments_, where each name segment
+is what a name was in Lariat 0.1, i.e. the only operation we require name segments
+to support is comparison of two name segments for equality.  (Comparing two
+qualified names for equality is straightforwardly derived from this.)
+
+The client of the Lariat ADT is not, by themselves, required to qualify any
+names; if each qualified name they supply in their usage consists of only a
+single name segment, that's fine.
+
+However, qualified names permit the definition of a simple algorithm for
+generating a fresh name, i.e. a name which does not appear in a given set
+of names.  To wit,
+
+*   pick the longest qualified name from the set;
+*   prepend an arbitrary name segment to that qualified name.
+
+If there are more than one longest names in the set, pick one arbitrarily.
+
+In addition, a simple way to pick an arbitrary name segment to prepend to
+it, is to look at the leftmost name segment already in the qualified name.
