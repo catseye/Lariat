@@ -40,14 +40,44 @@ resolve t x = destruct t
                 (\n   -> t)
                 (\u v -> t)
                 (\u n -> replaceAll u n x)
-    where
-        replaceAll t m x = destruct t
-                            (\n   -> if n == m then x else (var n))
-                            (\u v -> app (replaceAll u m x) (replaceAll v m x))
-                            (\u n -> abs n (replaceAll u m x))
+
+replaceAll t m x = destruct t
+                    (\n   -> if n == m then x else (var n))
+                    (\u v -> app (replaceAll u m x) (replaceAll v m x))
+                    (\u n -> abs n (replaceAll u m x))
 
 q = ["q"]
 
 test4a = (show $ resolve (testApp) (var q))           == "App (Abs (BoundVar 0)) (FreeVar [\"n\"])"
 test4b = (show $ resolve (abs n (var m)) (var q))     == "FreeVar [\"m\"]"
 test4c = (show $ resolve (abs n (var n)) (var q))     == "FreeVar [\"q\"]"
+
+--
+-- "beta-reduce a term" example
+--
+
+beta t = destruct t
+    (\n   -> t)
+    (\u v -> destruct u
+        (\_   -> app u v)
+        (\_ _ -> app u v)
+        (\u n -> replaceAll u n v)
+    )
+    (\_ _ -> t)
+
+testBeta1 = (show $ beta testApp)                    == "FreeVar [\"n\"]"
+testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
+testBeta3 = (show $ beta (var q))                    == "FreeVar [\"q\"]"
+
+isBetaReducible t = destruct t
+    (\n   -> False)
+    (\u v -> destruct u
+        (\_   -> False)
+        (\_ _ -> False)
+        (\_ _ -> True)
+    )
+    (\_ _ -> False)
+
+testIsBeta1 = (isBetaReducible testApp)       == True
+testIsBeta2 = (isBetaReducible testAbs)       == False
+testIsBeta3 = (isBetaReducible (var q))       == False
