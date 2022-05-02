@@ -81,10 +81,6 @@ testIsBeta1 = (isBetaReducible testApp)       == True
 testIsBeta2 = (isBetaReducible testAbs)       == False
 testIsBeta3 = (isBetaReducible (var q))       == False
 
---
--- TODO NEEDS WORK
---
-
 reduceOnce t =
     if isBetaReducible t then (Right (beta t)) else destruct t
         (\n   -> Left (var n))
@@ -96,10 +92,10 @@ reduceOnce t =
                         Right s -> Right (app u s)
                         Left  g -> Left (app f g)
         )
-        (\u _ -> Left u)
+        (\u n -> Left (abs n u))
 
 testReduceOnce1 = (show $ reduceOnce testApp)          == "Right (FreeVar n)"
-testReduceOnce2 = (show $ reduceOnce testAbs)          == "Left (Abs (BoundVar 0))" -- ???
+testReduceOnce2 = (show $ reduceOnce testAbs)          == "Left (Abs (BoundVar 0))"
 testReduceOnce3 = (show $ reduceOnce (var q))          == "Left (FreeVar q)"
 
 testReduceOnce4 =
