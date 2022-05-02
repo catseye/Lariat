@@ -3,15 +3,16 @@ module LariatDemo where
 import Prelude hiding (abs)
 import Data.Char (ord, chr)
 import Data.List (intercalate, nub)
-import Data.Lariat (var, app, abs, destruct)
+import Data.Lariat (name, var, app, abs, destruct)
 
 --
 -- Test cases
 -- (should really be unit tests; for now, run them manually)
 --
 
-n = ["n"]
-m = ["m"]
+n = name "n"
+m = name "m"
+q = name "q"
 
 testVar = (var n)
 testAbs = (abs n (var n))
@@ -46,11 +47,9 @@ replaceAll t m x = destruct t
                     (\u v -> app (replaceAll u m x) (replaceAll v m x))
                     (\u n -> abs n (replaceAll u m x))
 
-q = ["q"]
-
-test4a = (show $ resolve (testApp) (var q))           == "App (Abs (BoundVar 0)) (FreeVar [\"n\"])"
-test4b = (show $ resolve (abs n (var m)) (var q))     == "FreeVar [\"m\"]"
-test4c = (show $ resolve (abs n (var n)) (var q))     == "FreeVar [\"q\"]"
+test4a = (show $ resolve (testApp) (var q))           == "App (Abs (BoundVar 0)) (FreeVar n)"
+test4b = (show $ resolve (abs n (var m)) (var q))     == "FreeVar m"
+test4c = (show $ resolve (abs n (var n)) (var q))     == "FreeVar q"
 
 --
 -- "beta-reduce a term" example
@@ -65,12 +64,12 @@ beta t = destruct t
     )
     (\_ _ -> t)
 
-testBeta1 = (show $ beta testApp)                    == "FreeVar [\"n\"]"
+testBeta1 = (show $ beta testApp)                    == "FreeVar n"
 testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
-testBeta3 = (show $ beta (var q))                    == "FreeVar [\"q\"]"
+testBeta3 = (show $ beta (var q))                    == "FreeVar q"
 
 isBetaReducible t = destruct t
-    (\n   -> False)
+    (\_   -> False)
     (\u v -> destruct u
         (\_   -> False)
         (\_ _ -> False)
