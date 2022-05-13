@@ -26,13 +26,13 @@ version number will be promoted to 1.0 once vetted sufficiently.
 Background
 ----------
 
-There are several approaches for representing lambda terms in software.
+There are several approaches to representing lambda terms in software.
 
 The naive approach is to represent them just as they are written on paper.  In this approach, whether
 a variable, such as _x_, is free or bound depends on whether it is inside a lambda abstraction
 λ _x_ or not.  If you need to manipulate it (or the abstraction it's bound to), you might need
-to rename it so that it doesn't conflict with another variable also called _x_ that is bound
-to a different lambda abstraction.
+to rename it so that it doesn't conflict with another variable also called _x_ that is perhaps
+free or perhaps bound to a different lambda abstraction.
 
 This is tiresome and error-prone.  So other approaches were developed.
 
@@ -51,11 +51,11 @@ But this, too, has some drawbacks, so people have devised a number of other appr
 
 among others.
 
-But the point we would like to make is this:  At some level of abstraction _it does not matter_
-which approach is chosen _as long as_ the approach satisfies the essential properties
-that we require of lambda terms.
+But the point we would like to make in this article is this:  At some level of abstraction
+_it does not matter_ which approach is chosen _as long as_ the approach satisfies the
+essential properties that we require of lambda terms.
 
-To this end, we present this abstract data type for lambda terms, which we
+To this end, we present an abstract data type for lambda terms, which we
 call **Lariat**, consisting of six operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
@@ -69,7 +69,7 @@ In any explication of name binding we must deal with names.  In Lariat 0.1, name
 were left almost entirely undefined; the only operation they were required to
 support was comparison of two names for equality.  While this extreme level of
 abstraction might be attractive from a theoretical perspective, it introduced
-complications and awkwardness into practical use of the abstract data type.
+complications and awkwardness for any potential practical use of the abstract data type.
 
 In Lariat 0.2, names are treated as abstract objects much like terms, and we
 specify that names must support the following two operations:
@@ -102,8 +102,10 @@ same set of names, it should always return the same fresh name.
 > of Lariat itself these are ancillary operations, and as such will not be
 > defined in this document.
 
-The Operations
---------------
+Terms
+-----
+
+We now list the four operations available for manipulating terms.
 
 ### `var(n: name): term`
 
@@ -118,7 +120,7 @@ Given a term _t_ and a term _u_, return an _application term_
 which contains _t_ as its first subterm and _u_ as its second
 subterm.
 
-> **Note**: An application term is a term that behaves just as an
+> **Note**: An application term is a term that behaves just like an
 > ordered pair of terms.
 
 ### `abs(n: name, t: term): term`
@@ -129,11 +131,12 @@ variables named _n_ inside _t_' have been replaced with
 bound variables.  These bound variables are bound to
 the returned abstraction term.
 
-> **Note**: a bound variable is a term, but the user cannot
-> work with bound variables directly.  A bound variable is always
-> bound to a particular abstraction term.  In the case of `abs`,
-> the abstraction term to which variables are bound, is
-> the term returned by the `abs` operation.
+> **Note**: we may consider a bound variable to be a term, but
+> the user of the abstract data type cannot work with bound variables
+> directly, so it is unlike all other kinds of terms in that respect.
+> A bound variable is always bound to a particular abstraction term.
+> In the case of `abs`, the abstraction term to which variables are
+> bound is always the term returned by the `abs` operation.
 
 > **Note**: an abstraction term contains one subterm.  This
 > subterm cannot be extracted directly, as it may contain bound
@@ -143,8 +146,8 @@ the returned abstraction term.
 
 Given a term _t_ and three functions _f1_, _f2_, and _f3_
 (each with a different signature, described below),
-choose one of the three functions based on _t_, and evaluate it,
-returning what it returns.
+choose one of the three functions based on the structure of
+_t_, and evaluate it, returning what it returns.
 
 If _t_ is a free variable, evaluate _f1_(_n_) where _n_ is the name
 of the free variable _t_.
@@ -226,7 +229,7 @@ application term.
 
 The next task is to write a beta-reducer.  We destruct
 the term twice, once to ensure it is an application term,
-and second to ensure the application term's first subterm
+and again to ensure the application term's first subterm
 is an abstraction term.  Then we use `resolve`, above, to
 plug the application term's second subterm into the
 abstraction term.
@@ -243,9 +246,11 @@ abstraction term.
             fun(t) -> t
         )
 
-In fact, we could merge this implementation with the
+In fact, we _could_ merge this implementation with the
 implementation of `resolve` and this would save a call
-to `destruct`.
+to `destruct`; but this would be merely an optimisation.
+It is left as an exercise to any reader who may be so
+motivated to undertake it.
 
 ### Example 4
 
@@ -264,18 +269,18 @@ reducing it.
                 fun(n) -> [false, var(n)],
                 fun(u, v) ->
                     let
-                        r = reduce(u)
+                        [has_rewritten, new_u] = reduce(u)
                     in
-                        if r[0] then
-                            [true, app(r[1], v)]
+                        if has_rewritten then
+                            [true, app(new_u, v)]
                         else
                             let
-                                s = reduce(v)
+                                [has_rewritten, new_v] = reduce(v)
                             in
-                                if s[0] then
-                                    [true, app(u, s[1])]
+                                if has_rewritten then
+                                    [true, app(u, new_v)]
                                 else
-                                    [false, app(r[1], s[1])],
+                                    [false, app(new_u, new_v)],
                 fun(t) -> [false, t]
             )
 
@@ -284,10 +289,10 @@ to a proper lambda term normalizer:
 
     let normalize(t) ->
         let
-            r = reduce(t)
+            [has_rewritten, new_t] = reduce(t)
         in
-            if r[0] then
-                normalize(r[1])
+            if has_rewritten then
+                normalize(new_t)
             else
                 t
 
@@ -350,4 +355,9 @@ it, is to look at the leftmost name segment already in the qualified name.
 
 So we can assume an algorithm like this is in use.  But ultimately, any
 implementation which satisfies the two operations required of names
-(`equal` and `fresh`) is acceptable.
+(`equal` and `fresh`) is acceptable.  We provide this concrete representation
+and algorithm here partly because a trivial concrete representation as used
+in Lariat 0.1 is _not_ sufficient for implementing names (as there is no
+derivable way to obtain a fresh name when needed, without relying on some
+external fresh name supply) and we wanted to show that there was at least
+_some_ concrete representation which fulfills the requirements.
