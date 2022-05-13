@@ -2,105 +2,84 @@ module LariatDemo where
 
 import Prelude hiding (abs)
 import Data.Char (ord, chr)
-import Data.Lariat (var, app, abs, resolve, destruct, freevars)
+import Data.List (intercalate, nub)
+import Data.Lariat (name, var, app, abs, destruct)
 
 --
 -- Test cases
 -- (should really be unit tests; for now, run them manually)
 --
 
-testVar = (var "n")
-testAbs = (abs "n" (var "n"))
+n = name "n"
+m = name "m"
+q = name "q"
+
+testVar = (var n)
+testAbs = (abs n (var n))
 testApp = app testAbs testVar
 
 testDestruct t = destruct t
                     (\n   -> "var:" ++ (show n))
-                    (\s t -> "app:" ++ (show s) ++ "," ++ (show t))
-                    (\t   -> "abs:" ++ (show t))
+                    (\u v -> "app:" ++ (show u) ++ "," ++ (show v))
+                    (\u n -> "abs:" ++ (show n) ++ ":" ++ (show u))
 
-test2a = testDestruct (var "n")
-test2b = testDestruct (app (var "n") (var "m"))
-test2c = testDestruct (abs "n" (var "n"))
+test2a = testDestruct (var n)
+test2b = testDestruct (app (var n) (var m))
+test2c = testDestruct (abs n (var n))
 
-test3a = (freevars testApp)                     == ["n"]
-test3b = (freevars testAbs)                     == []
-test3c = (freevars (app (var "n") (var "n")))   == ["n"]
+freevars t = nub $ freevars' t [] where
+    freevars' t ours = destruct t
+                        (\n   -> if elem n ours then [] else [n])
+                        (\u v -> freevars' u ours ++ freevars' v ours)
+                        (\u n -> freevars' u (n:ours))
 
-test4a = (show $ resolve (testApp) (var "q"))               == "App (Abs (BoundVar 0)) (FreeVar \"n\")"
-test4b = (show $ resolve (abs "n" (var "m")) (var "q"))     == "FreeVar \"m\""
-test4c = (show $ resolve (abs "n" (var "n")) (var "q"))     == "FreeVar \"q\""
+test3a = (freevars testApp)               == [n]
+test3b = (freevars testAbs)               == []
+test3c = (freevars (app (var n) (var n))) == [n]
 
---
--- Name supply
---
+resolve t x = destruct t
+                (\n   -> t)
+                (\u v -> t)
+                (\u n -> replaceAll u n x)
 
-intToName n =
-    let
-        p = if n > 26 then (intToName (n `div` 26)) else ""
-        n' = n `mod` 26
-        c = chr (ord 'a' + n')
-    in
-        p ++ [c]
+replaceAll t m x = destruct t
+                    (\n   -> if n == m then x else (var n))
+                    (\u v -> app (replaceAll u m x) (replaceAll v m x))
+                    (\u n -> abs n (replaceAll u m x))
 
-names = map (intToName) [0..]
-
-pick exclude names =
-    let
-        [n] = take 1 names
-        names' = drop 1 names
-        excluded = elem n exclude
-    in
-        if excluded then pick exclude names' else (n, names')
-
---
--- "Contains a free variable named _j_" example
---
-
-contains j t names =
-    destruct t
-        (\n   -> n == j)
-        (\u v -> contains j u names || contains j v names)
-        (\u   ->
-            let
-                (n, names') = pick [j] names
-                t' = resolve t (var n)
-            in
-                contains j t' names'
-        )
-
-testContains1 = (contains "n" testApp names)                 == True
-testContains2 = (contains "m" testApp names)                 == False
-testContains3 = (contains "n" (abs "n" (var "n")) names)     == False
+test4a = (show $ resolve (testApp) (var q))           == "App (Abs (BoundVar 0)) (FreeVar n)"
+test4b = (show $ resolve (abs n (var m)) (var q))     == "FreeVar m"
+test4c = (show $ resolve (abs n (var n)) (var q))     == "FreeVar q"
 
 --
 -- "beta-reduce a term" example
 --
 
 beta t = destruct t
-    (\n   -> var n)
+    (\n   -> t)
     (\u v -> destruct u
         (\_   -> app u v)
         (\_ _ -> app u v)
-        (\u   -> resolve u v)
+        (\u n -> replaceAll u n v)
     )
-    (\u   -> u)
+    (\_ _ -> t)
 
-testBeta1 = (show $ beta testApp)                    == "FreeVar \"n\""
+testBeta1 = (show $ beta testApp)                    == "FreeVar n"
 testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
-testBeta3 = (show $ beta (var "j"))                  == "FreeVar \"j\""
+testBeta3 = (show $ beta (var q))                    == "FreeVar q"
 
 isBetaReducible t = destruct t
-    (\n   -> False)
+    (\_   -> False)
     (\u v -> destruct u
         (\_   -> False)
         (\_ _ -> False)
-        (\u   -> True)
+        (\_ _ -> True)
     )
-    (\u   -> False)
+    (\_ _ -> False)
 
 testIsBeta1 = (isBetaReducible testApp)       == True
 testIsBeta2 = (isBetaReducible testAbs)       == False
-testIsBeta3 = (isBetaReducible (var "j"))     == False
+testIsBeta3 = (isBetaReducible (var q))       == False
 
 reduceOnce t =
     if isBetaReducible t then (Right (beta t)) else destruct t
@@ -113,27 +92,27 @@ reduceOnce t =
                         Right s -> Right (app u s)
                         Left  g -> Left (app f g)
         )
-        (\u   -> Left u)
+        (\u n -> Left (abs n u))
 
-testReduceOnce1 = (show $ reduceOnce testApp)          == "Right (FreeVar \"n\")"
+testReduceOnce1 = (show $ reduceOnce testApp)          == "Right (FreeVar n)"
 testReduceOnce2 = (show $ reduceOnce testAbs)          == "Left (Abs (BoundVar 0))"
-testReduceOnce3 = (show $ reduceOnce (var "j"))        == "Left (FreeVar \"j\")"
+testReduceOnce3 = (show $ reduceOnce (var q))          == "Left (FreeVar q)"
 
 testReduceOnce4 =
     let
-       t = (app (app (abs "j" (var "j")) (abs "j" (var "j"))) (var "n"))
+       t = (app (app (abs q (var q)) (abs q (var q))) (var n))
     in
-       (show $ reduceOnce t) == "Right (App (Abs (BoundVar 0)) (FreeVar \"n\"))"
+       (show $ reduceOnce t) == "Right (App (Abs (BoundVar 0)) (FreeVar n))"
 
 testReduceOnce5 =
     let
-       t = (app (app (abs "j" (var "j")) (abs "j" (var "j"))) (var "n"))
+       t = (app (app (abs q (var q)) (abs q (var q))) (var n))
        (Right t') = reduceOnce t
     in
-       (show $ reduceOnce t') == "Right (FreeVar \"n\")"
+       (show $ reduceOnce t') == "Right (FreeVar n)"
 
 testReduceOnce6 =
     let
-       t = (app (var "k") (app (abs "j" (var "j")) (var "m")))
+       t = (app (var n) (app (abs q (var q)) (var m)))
     in
-       (show $ reduceOnce t) == "Right (App (FreeVar \"k\") (FreeVar \"m\"))"
+       (show $ reduceOnce t) == "Right (App (FreeVar n) (FreeVar m))"
