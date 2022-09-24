@@ -1,4 +1,4 @@
 #!/bin/sh
 
-(cd impl/Haskell && ghc LariatDemo.hs -e allTests) || exit 1
+(cd impl/Haskell && ghc Main.hs -e main) || exit 1
 

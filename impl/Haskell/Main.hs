@@ -1,8 +1,13 @@
-module LariatDemo where
+module Main where
+
+--
+-- Test suite for Haskell implementation of Lariat.
+-- This "Main" module just runs the tests and exits.
+--
 
 import Prelude hiding (abs)
 import Data.Char (ord, chr)
-import Data.List (intercalate, nub)
+import Data.List (nub)
 import Data.Lariat (name, var, app, abs, destruct)
 
 --
@@ -147,7 +152,13 @@ testReduceOnce = expect
     ]
 
 
+allTests :: String
 allTests =
-    case (testShowDestruct, testFreeVars, testResolve, testBeta, testIsBetaReducible, testReduceOnce) of
-        ([],[],[],[],[],[]) -> "ok"
+    -- Hugs can only Show tuples up to 5-tuples.  Not 6-tuples.  Thus this nesting:
+    case ((testShowDestruct, testFreeVars, testResolve, testBeta, testIsBetaReducible), testReduceOnce) of
+        (([],[],[],[],[]), []) -> "ok"
         other -> error (show other)
+
+main = do
+    let x = allTests
+    putStrLn x
