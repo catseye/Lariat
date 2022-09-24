@@ -6,26 +6,52 @@ import Data.List (intercalate, nub)
 import Data.Lariat (name, var, app, abs, destruct)
 
 --
--- Test cases
--- (should really be unit tests; for now, run them manually)
+-- Test helpers
+--
+
+-- First, a simple function to express our illustrative tests:
+-- Given a list of pairs, show those pairs that are not equal.
+-- Anything other than an empty list returned indicates a mistake.
+
+expect [] = []
+expect ((a, b):rest) = if (show a) == b then expect rest else ((a, b):expect rest)
+
+--
+-- Convenience function to destruct Either
+--
+
+right (Right x) = x
+
+--
+-- Fixtures
 --
 
 n = name "n"
 m = name "m"
 q = name "q"
 
-testVar = (var n)
-testAbs = (abs n (var n))
-testApp = app testAbs testVar
+demoVar = (var n)
+demoAbs = (abs n (var n))
+demoApp = app demoAbs demoVar
+demoTerm1 = (app (app (abs q (var q)) (abs q (var q))) (var n))
+demoTerm2 = (app (var n) (app (abs q (var q)) (var m)))
 
-testDestruct t = destruct t
+--
+-- Test cases
+--
+
+showDestruct t = destruct t
                     (\n   -> "var:" ++ (show n))
                     (\u v -> "app:" ++ (show u) ++ "," ++ (show v))
                     (\u n -> "abs:" ++ (show n) ++ ":" ++ (show u))
 
-test2a = testDestruct (var n)
-test2b = testDestruct (app (var n) (var m))
-test2c = testDestruct (abs n (var n))
+testShowDestruct = expect
+    [
+        (showDestruct (var n),               "\"var:n\""),
+        (showDestruct (app (var n) (var m)), "\"app:FreeVar n,FreeVar m\""),
+        (showDestruct (abs n (var n)),       "\"abs:y:FreeVar y\"")
+    ]
+
 
 freevars t = nub $ freevars' t [] where
     freevars' t ours = destruct t
@@ -33,9 +59,13 @@ freevars t = nub $ freevars' t [] where
                         (\u v -> freevars' u ours ++ freevars' v ours)
                         (\u n -> freevars' u (n:ours))
 
-test3a = (freevars testApp)               == [n]
-test3b = (freevars testAbs)               == []
-test3c = (freevars (app (var n) (var n))) == [n]
+testFreeVars = expect
+    [
+        (freevars demoApp,                 "[n]"),
+        (freevars demoAbs,                 "[]"),
+        (freevars (app (var n) (var n)),   "[n]")
+    ]
+
 
 resolve t x = destruct t
                 (\n   -> t)
@@ -47,9 +77,13 @@ replaceAll t m x = destruct t
                     (\u v -> app (replaceAll u m x) (replaceAll v m x))
                     (\u n -> abs n (replaceAll u m x))
 
-test4a = (show $ resolve (testApp) (var q))           == "App (Abs (BoundVar 0)) (FreeVar n)"
-test4b = (show $ resolve (abs n (var m)) (var q))     == "FreeVar m"
-test4c = (show $ resolve (abs n (var n)) (var q))     == "FreeVar q"
+testResolve = expect
+    [
+        (resolve (demoApp) (var q),       "App (Abs (BoundVar 0)) (FreeVar n)"),
+        (resolve (abs n (var m)) (var q), "FreeVar m"),
+        (resolve (abs n (var n)) (var q), "FreeVar q")
+    ]
+
 
 --
 -- "beta-reduce a term" example
@@ -64,9 +98,13 @@ beta t = destruct t
     )
     (\_ _ -> t)
 
-testBeta1 = (show $ beta testApp)                    == "FreeVar n"
-testBeta2 = (show $ beta testAbs)                    == "Abs (BoundVar 0)"
-testBeta3 = (show $ beta (var q))                    == "FreeVar q"
+testBeta = expect
+    [
+        (beta demoApp,                 "FreeVar n"),
+        (beta demoAbs,                 "Abs (BoundVar 0)"),
+        (beta (var q),                 "FreeVar q")
+    ]
+
 
 isBetaReducible t = destruct t
     (\_   -> False)
@@ -77,9 +115,13 @@ isBetaReducible t = destruct t
     )
     (\_ _ -> False)
 
-testIsBeta1 = (isBetaReducible testApp)       == True
-testIsBeta2 = (isBetaReducible testAbs)       == False
-testIsBeta3 = (isBetaReducible (var q))       == False
+testIsBetaReducible = expect
+    [
+        (isBetaReducible demoApp, "True"),
+        (isBetaReducible demoAbs, "False"),
+        (isBetaReducible (var q), "False")
+    ]
+
 
 reduceOnce t =
     if isBetaReducible t then (Right (beta t)) else destruct t
@@ -94,25 +136,18 @@ reduceOnce t =
         )
         (\u n -> Left (abs n u))
 
-testReduceOnce1 = (show $ reduceOnce testApp)          == "Right (FreeVar n)"
-testReduceOnce2 = (show $ reduceOnce testAbs)          == "Left (Abs (BoundVar 0))"
-testReduceOnce3 = (show $ reduceOnce (var q))          == "Left (FreeVar q)"
+testReduceOnce = expect
+    [
+        (reduceOnce demoApp,           "Right (FreeVar n)"),
+        (reduceOnce demoAbs,           "Left (Abs (BoundVar 0))"),
+        (reduceOnce (var q),           "Left (FreeVar q)"),
+        (reduceOnce demoTerm1,         "Right (App (Abs (BoundVar 0)) (FreeVar n))"),
+        (reduceOnce (right $ reduceOnce demoTerm1), "Right (FreeVar n)"),
+        (reduceOnce demoTerm2,         "Right (App (FreeVar n) (FreeVar m))")
+    ]
 
-testReduceOnce4 =
-    let
-       t = (app (app (abs q (var q)) (abs q (var q))) (var n))
-    in
-       (show $ reduceOnce t) == "Right (App (Abs (BoundVar 0)) (FreeVar n))"
 
-testReduceOnce5 =
-    let
-       t = (app (app (abs q (var q)) (abs q (var q))) (var n))
-       (Right t') = reduceOnce t
-    in
-       (show $ reduceOnce t') == "Right (FreeVar n)"
-
-testReduceOnce6 =
-    let
-       t = (app (var n) (app (abs q (var q)) (var m)))
-    in
-       (show $ reduceOnce t) == "Right (App (FreeVar n) (FreeVar m))"
+allTests =
+    case (testShowDestruct, testFreeVars, testResolve, testBeta, testIsBetaReducible, testReduceOnce) of
+        ([],[],[],[],[],[]) -> "ok"
+        other -> error (show other)
