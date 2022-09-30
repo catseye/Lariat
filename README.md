@@ -360,7 +360,7 @@ Appendices
 
 #### On the implementation of names.
 
-One way to implement names as defined in Lariat 0.2 is to use _qualified names_.
+One way to implement names as defined in Lariat 0.3 is to use _qualified names_.
 A qualified name is an ordered list of _name segments_, where each name segment
 is what a name was in Lariat 0.1, i.e. the only operation we require name segments
 to support is comparison of two name segments for equality.  (Comparing two
@@ -384,9 +384,9 @@ it, is to look at the leftmost name segment already in the qualified name.
 
 So we can assume an algorithm like this is in use.  But ultimately, any
 implementation which satisfies the two operations required of names
-(`equal` and `fresh`) is acceptable.  We provide this concrete representation
-and algorithm here partly because a trivial concrete representation as used
-in Lariat 0.1 is _not_ sufficient for implementing names (as there is no
-derivable way to obtain a fresh name when needed, without relying on some
-external fresh name supply) and we wanted to show that there was at least
+(`equal` and `fresh`) is acceptable.  This concrete representation and
+algorithm is provided here partly because a trivial concrete representation
+as used in Lariat 0.1 is _not_ sufficient for implementing names (as there
+is no derivable way to obtain a fresh name when needed, without relying on
+some external fresh name supply) and I wanted to show that there was at least
 _some_ concrete representation which fulfills the requirements.
