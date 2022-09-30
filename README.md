@@ -308,6 +308,59 @@ to a proper lambda term normalizer:
 Discussion
 ----------
 
+The idea of formulating an ADT for lambda terms is not a new one.
+In Chapter 9 of "ML for the Working Programmer" (Paulson 1991), the author
+develops an implementation of lambda terms in ML and notes
+
+> Signature LAMBDA_NAMELESS is concrete, revealing all the internal
+> details.  [...]  An abstract signature for the lambda-calculus would
+> provide operations upon lambda-terms themselves, hiding their
+> representation.
+
+So if the idea is well established, why do we see so few implementations
+of it out there?  I think it's simply because it doesn't have a lot of
+practical value in the usual contexts in which lambda term manipulation
+code is written -- that is to say, research contexts, where industrial
+software engineering methods take a back seat.
+
+In the context of Lariat, it is an object of study in its own right.
+
+Now, here's the part I cut out of the paragraph from Paulson's book
+quoted above:
+
+> Many values of type _term_ are **improper**: they do not correspond to
+> real lambda-terms because they contain unmatched bound variable indices.
+> [...]  _abstract_ returns improper terms and _subst_ expects them.
+
+And at the end of the section, he poses Exercise 9.16:
+
+> Define a signature for the lambda-calculus that hides its
+> internal representation.
+
+Which is sort of what I've done with Lariat, except he continues with
+
+> It should specify predicates to test whether a lambda-term is a variable,
+> an abstraction, or an application, and specify functions for abstraction
+> and substitution.
+
+But as he said earlier, substitution expects improper terms; so he appears
+to be asking for an abstract representation of lambda terms that includes
+improper lambda terms.
+
+Maybe that's OK for the sake of an exercise in a textbook, but that strikes
+me as a poor abstraction.  If you have an abstract object that represents
+instances of something, it's best if your abstract object can _only_ represent
+_valid_ instances of that thing.
+
+(For more information on this philosophy, see "Parse, don't Validate";
+[LCF-style-ND](http://github.com/cpressey/LCF-style-ND) illustrates how
+it applies to theorem objects in an LCF-style theorem prover; and it
+applies here too.)
+
+So if we have an ADT for lambda terms it's best if the ADT can _only_ represent
+_proper_ lambda terms.
+
+It was considering this point that led to the formulation of the Lariat ADT.
 `var`, `app`, and `abs` construct terms, while `destruct` takes them apart.
 Constructing terms is the easy part; it's taking them apart properly that's
 hard.
