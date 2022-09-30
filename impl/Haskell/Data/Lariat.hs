@@ -1,5 +1,10 @@
 module Data.Lariat (name, var, app, abs, destruct) where
 
+--
+-- This is a concrete implementation of the Lariat ADT that uses a
+-- "locally nameless"-like internal representation of lambda terms.
+--
+
 import Prelude hiding (abs)
 
 class Freshable a where

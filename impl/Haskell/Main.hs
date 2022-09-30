@@ -22,24 +22,13 @@ expect [] = []
 expect ((a, b):rest) = if (show a) == b then expect rest else ((a, b):expect rest)
 
 --
--- Convenience function to destruct Either
+-- Convenience functions
 --
 
 right (Right x) = x
-
---
--- Fixtures
---
-
 n = name "n"
 m = name "m"
 q = name "q"
-
-demoVar = (var n)
-demoAbs = (abs n (var n))
-demoApp = app demoAbs demoVar
-demoTerm1 = (app (app (abs q (var q)) (abs q (var q))) (var n))
-demoTerm2 = (app (var n) (app (abs q (var q)) (var m)))
 
 --
 -- Test cases
@@ -66,9 +55,9 @@ freevars t = nub $ freevars' t [] where
 
 testFreeVars = expect
     [
-        (freevars demoApp,                 "[n]"),
-        (freevars demoAbs,                 "[]"),
-        (freevars (app (var n) (var n)),   "[n]")
+        (freevars (app (abs n (var n)) (var n)),   "[n]"),
+        (freevars (abs n (var n)),                 "[]"),
+        (freevars (app (var n) (var n)),           "[n]")
     ]
 
 
@@ -84,9 +73,9 @@ replaceAll t m x = destruct t
 
 testResolve = expect
     [
-        (resolve (demoApp) (var q),       "App (Abs (BoundVar 0)) (FreeVar n)"),
-        (resolve (abs n (var m)) (var q), "FreeVar m"),
-        (resolve (abs n (var n)) (var q), "FreeVar q")
+        (resolve ((app (abs n (var n)) (var n))) (var q), "App (Abs (BoundVar 0)) (FreeVar n)"),
+        (resolve (abs n (var m)) (var q),                 "FreeVar m"),
+        (resolve (abs n (var n)) (var q),                 "FreeVar q")
     ]
 
 
@@ -105,9 +94,9 @@ beta t = destruct t
 
 testBeta = expect
     [
-        (beta demoApp,                 "FreeVar n"),
-        (beta demoAbs,                 "Abs (BoundVar 0)"),
-        (beta (var q),                 "FreeVar q")
+        (beta (app (abs n (var n)) (var n)),   "FreeVar n"),
+        (beta (abs n (var n)),                 "Abs (BoundVar 0)"),
+        (beta (var q),                         "FreeVar q")
     ]
 
 
@@ -122,12 +111,15 @@ isBetaReducible t = destruct t
 
 testIsBetaReducible = expect
     [
-        (isBetaReducible demoApp, "True"),
-        (isBetaReducible demoAbs, "False"),
-        (isBetaReducible (var q), "False")
+        (isBetaReducible (app (abs n (var n)) (var n)), "True"),
+        (isBetaReducible (abs n (var n)),               "False"),
+        (isBetaReducible (var q),                       "False")
     ]
 
 
+--
+-- Returns `Right t'` is the term was rewritten, `Left t` if it was not.
+--
 reduceOnce t =
     if isBetaReducible t then (Right (beta t)) else destruct t
         (\n   -> Left (var n))
@@ -143,20 +135,45 @@ reduceOnce t =
 
 testReduceOnce = expect
     [
-        (reduceOnce demoApp,           "Right (FreeVar n)"),
-        (reduceOnce demoAbs,           "Left (Abs (BoundVar 0))"),
-        (reduceOnce (var q),           "Left (FreeVar q)"),
-        (reduceOnce demoTerm1,         "Right (App (Abs (BoundVar 0)) (FreeVar n))"),
-        (reduceOnce (right $ reduceOnce demoTerm1), "Right (FreeVar n)"),
-        (reduceOnce demoTerm2,         "Right (App (FreeVar n) (FreeVar m))")
+        (reduceOnce (app (abs n (var n)) (var n)),
+                    "Right (FreeVar n)"),
+        (reduceOnce (abs n (var n)),
+                    "Left (Abs (BoundVar 0))"),
+        (reduceOnce (var q),
+                    "Left (FreeVar q)"),
+        (reduceOnce (app (app (abs q (var q)) (abs q (var q))) (var n)),
+                    "Right (App (Abs (BoundVar 0)) (FreeVar n))"),
+        (reduceOnce (right $ reduceOnce (app (app (abs q (var q)) (abs q (var q))) (var n))),
+                    "Right (FreeVar n)"),
+        (reduceOnce (app (var n) (app (abs q (var q)) (var m))),
+                    "Right (App (FreeVar n) (FreeVar m))")
+    ]
+
+
+--
+-- Reduce a term to normal form.
+--
+
+normalize t =
+    case reduceOnce t of
+        Right t' -> normalize t'
+        Left  _  -> t
+
+
+testNormalize = expect
+    [
+        (normalize (app (abs n (var n)) (var n)), "FreeVar n")
     ]
 
 
 allTests :: String
 allTests =
     -- Hugs can only Show tuples up to 5-tuples.  Not 6-tuples.  Thus this nesting:
-    case ((testShowDestruct, testFreeVars, testResolve, testBeta, testIsBetaReducible), testReduceOnce) of
-        (([],[],[],[],[]), []) -> "ok"
+    case (
+           (testShowDestruct, testFreeVars, testResolve, testBeta, testIsBetaReducible),
+           (testReduceOnce, testNormalize)
+        ) of
+        (([],[],[],[],[]), ([], [])) -> "ok"
         other -> error (show other)
 
 main = do

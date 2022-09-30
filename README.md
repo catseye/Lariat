@@ -1,7 +1,7 @@
 Lariat
 ======
 
-_Version 0.2_
+_Version 0.3_
 
 **Lariat** is a project to define an abstract data type for lambda terms,
 consisting of six basic operations: `equal` and `fresh` (on names), and
@@ -13,7 +13,7 @@ day variations on it) in various programming languages, including:
 
 *   [Haskell](impl/Haskell/)
 
-The version of the Lariat defined by this document is 0.2.  This
+The version of the Lariat defined by this document is 0.3.  This
 version number will be promoted to 1.0 once vetted sufficiently.
 
 #### Table of Contents
@@ -36,7 +36,7 @@ free or perhaps bound to a different lambda abstraction.
 
 This is tiresome and error-prone.  So other approaches were developed.
 
-One such approach alternate is De Bruijn indexes, where variables are represented not by names,
+One such alternate approach is De Bruijn indexes, where variables are represented not by names,
 but by numbers.  The number indicates which lambda abstraction the variable is bound to, if any;
 a 1 indicates the immediately enclosing lambda abstraction, a 2 indicates the lambda abstraction
 just above that, and so on.  If the number exceeds the number of enclosing lambda abstractions,
@@ -44,23 +44,29 @@ then it is a free variable.
 
 But this, too, has some drawbacks, so people have devised a number of other approaches:
 
-*   "nominal techniques" (Gabbay and Pitts)
-*   "locally nameless" (various?)
-*   "maps" (Sato et al.)
-*   "bound" (Kmett)
+*   "nominal techniques" ([A New Approach to Syntax](http://www.gabbay.org.uk/papers/newaas.pdf) (PDF), Gabbay and Pitts)
+*   "locally nameless" ([I am not a number](http://www.e-pig.org/downloads/notanum.pdf) (PDF), McBride and McKinna)
+*   "maps" ([Viewing Terms through Maps](https://www.mathematik.uni-muenchen.de/~schwicht/papers/lambda13/lamtheory8.pdf) (PDF), Sato et al.)
+*   "bound" ([bound: Making de Bruijn Succ Less](https://www.schoolofhaskell.com/user/edwardk/bound), Kmett)
 
 among others.
 
-But the point we would like to make in this article is this:  At some level of abstraction
+But the point I would like to make in this article is this:  At some level of abstraction
 _it does not matter_ which approach is chosen _as long as_ the approach satisfies the
 essential properties that we require of lambda terms.
 
-To this end, we present an abstract data type for lambda terms, which we
+To this end, this article presents an abstract data type (ADT) for lambda terms, which we
 call **Lariat**, consisting of six operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
+
+Moreover, this ADT is _total_ in the sense that all operations are defined
+for all inputs that conform to their type signatures.  There are no conditions
+(such as trying to pop from an empty stack in a stack ADT) where the result is
+undefined, or defined to return an error condition.  This totality does, however,
+come at the cost of the operations being higher-order and with polymorphic types.
 
 Names
 -----
@@ -69,9 +75,9 @@ In any explication of name binding we must deal with names.  In Lariat 0.1, name
 were left almost entirely undefined; the only operation they were required to
 support was comparison of two names for equality.  While this extreme level of
 abstraction might be attractive from a theoretical perspective, it introduced
-complications and awkwardness for any potential practical use of the abstract data type.
+complications and awkwardness for any potential practical application of the ADT.
 
-In Lariat 0.2, names are treated as abstract objects much like terms, and we
+In Lariat 0.2 and beyond, names are treated as abstract objects much like terms, and we
 specify that names must support the following two operations:
 
 ### `equal(n: name, m: name): boolean`
@@ -89,16 +95,16 @@ only care about the guarantee that it is not a member of _ns_.  For
 discussion on implementation, see [Appendix A](#appendix-a).
 
 The operation should be deterministic in the sense that, given the
-same set of names, it should always return the same fresh name.
+same set of names, it always returns the same fresh name.
 
 > **Note**: It is not required that the `fresh` operation be
 > exposed to the user; it is, rather, a structural requirement
 > of a correct implementation of `destruct`, below.
 
-> **Note**: Beyond these two operations, it would be not unexpected that an
+> **Note**: Beyond these two operations, it would be expected that a practical
 > implementation of Lariat would provide other operations such as constructing
 > a new name from a textual representation, rendering a given name to
-> a canonical textual representation, and suchlike.  From the perspective
+> a canonical textual representation, and so forth.  From the perspective
 > of Lariat itself these are ancillary operations, and as such will not be
 > defined in this document.
 
@@ -166,7 +172,7 @@ _u_ itself have been replaced by _n_, where _n_ is a fresh name
 > bound to the abstraction term being `destruct`ed.
 
 > **Note**: the `destruct` operation's signature shown above was abbreviated to make
-> it look less intimidating.  The full signature would be something more like
+> it look less intimidating.  The full signature would be
 > 
 >     destruct(t: term, f1: fun(n: name): X, f2: fun(u: term, v: term): X, f3: fun(u: term, n: name): X): X
 > 
@@ -176,7 +182,7 @@ Some Examples
 
 We will now give some concrete examples of how these operations
 can be used, but first, we would like to emphasize that
-this is an abstract data type for lambda _terms_, not the lambda
+Lariat is an ADT for lambda _terms_, not the lambda
 _calculus_.  Naturally, one ought to be able to write a lambda calculus
 normalizer using these operations (and this will be one of our goals in
 the next section), but one is not restricted to that activity.  The terms
@@ -190,6 +196,7 @@ in a lambda term.  This is not difficult; we only need to
 keep track of the new free variables we introduce ourselves
 when we `destruct` an abstraction term, and make sure not to
 include any of them when we report the free variables we found.
+(In the following pseudocode, `+` is the set union operator.)
 
     let freevars = fun(t, ours) ->
         destruct(t,
@@ -307,7 +314,11 @@ hard.
 [this article on Destructorizers](http://github.com/cpressey/Destructorizers).
 In fact, this use case of "taking apart" lambda terms was one
 of the major motivations for formulating the destructorizer
-concept.
+concept.  This is what allows the ADT to be "total".  (In retrospect,
+I'm not certain whether this conveys any major advantage; lots of
+classic ADTs, like those for stacks and queues, are not total, yet
+they serve perfectly well as definitions.  But, this is how the dice
+landed for Lariat, and this is the way it shall stay for now.)
 
 When working with lambda terms, one is often concerned with
 comparing two lambda terms for equality, modulo renaming of bound
@@ -319,8 +330,8 @@ then compare the texts for equality.
 But of course such an operation could be provided as a native
 operation for performance or convenience.  Similarly, although
 we have shown that we can implement `freevars` using the operations
-of the abstract data type, it is expected that it would already
-be implemented in the implementation of the abstract data type
+of the ADT, it is expected that it would already
+be implemented in the implementation of the ADT
 (to correctly implement `destruct`), so could be exposed to the
 user as well.
 
