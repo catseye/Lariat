@@ -36,18 +36,20 @@ free or perhaps bound to a different lambda abstraction.
 
 This is tiresome and error-prone.  So other approaches were developed.
 
-One such alternate approach is De Bruijn indexes, where variables are represented not by names,
-but by numbers.  The number indicates which lambda abstraction the variable is bound to, if any;
+One such alternate approach is [De Bruijn indexes](https://en.wikipedia.org/wiki/De_Bruijn_index) (Wikipedia),
+where variables are represented not by names, but by numbers.
+The number indicates which lambda abstraction the variable is bound to, if any;
 a 1 indicates the immediately enclosing lambda abstraction, a 2 indicates the lambda abstraction
 just above that, and so on.  If the number exceeds the number of enclosing lambda abstractions,
 then it is a free variable.
 
 But this, too, has some drawbacks, so people have devised a number of other approaches:
 
-*   "nominal techniques" ([A New Approach to Syntax](http://www.gabbay.org.uk/papers/newaas.pdf) (PDF), Gabbay and Pitts)
-*   "locally nameless" ([I am not a number](http://www.e-pig.org/downloads/notanum.pdf) (PDF), McBride and McKinna)
-*   "maps" ([Viewing Terms through Maps](https://www.mathematik.uni-muenchen.de/~schwicht/papers/lambda13/lamtheory8.pdf) (PDF), Sato et al.)
-*   "bound" ([bound: Making de Bruijn Succ Less](https://www.schoolofhaskell.com/user/edwardk/bound), Kmett)
+*   "maps" ([Viewing Terms through Maps](https://www.mathematik.uni-muenchen.de/~schwicht/papers/lambda13/lamtheory8.pdf) (PDF), Sato et al., 1980)
+    (see also [these slides](https://www.fos.kuis.kyoto-u.ac.jp/~masahiko/papers/mask.pdf) (PDF) from 2012)
+*   "nominal techniques" ([A New Approach to Syntax](http://www.gabbay.org.uk/papers/newaas.pdf) (PDF), Gabbay and Pitts, 1999)
+*   "locally nameless" ([I am not a number](http://www.e-pig.org/downloads/notanum.pdf) (PDF), McBride and McKinna, 2004)
+*   "bound" ([bound: Making de Bruijn Succ Less](https://www.schoolofhaskell.com/user/edwardk/bound), Kmett, 2013)
 
 among others.
 
@@ -314,11 +316,7 @@ hard.
 [this article on Destructorizers](http://github.com/cpressey/Destructorizers).
 In fact, this use case of "taking apart" lambda terms was one
 of the major motivations for formulating the destructorizer
-concept.  This is what allows the ADT to be "total".  (In retrospect,
-I'm not certain whether this conveys any major advantage; lots of
-classic ADTs, like those for stacks and queues, are not total, yet
-they serve perfectly well as definitions.  But, this is how the dice
-landed for Lariat, and this is the way it shall stay for now.)
+concept.  This is what allows the ADT to be "total".
 
 When working with lambda terms, one is often concerned with
 comparing two lambda terms for equality, modulo renaming of bound
@@ -334,6 +332,26 @@ of the ADT, it is expected that it would already
 be implemented in the implementation of the ADT
 (to correctly implement `destruct`), so could be exposed to the
 user as well.
+
+The ADT that has been described in this document has been described
+quite precisely (I hope) but not formally.  A direction that this
+work could be taken in would be to produce a definition of Lariat that
+is actually formal, i.e. in the form of an equational theory.  However,
+the use of `destruct` to make the ADT total complicates this, as one
+of the operations takes functions.  If one were to formulate equations
+for this ADT, it would be much more straightforward to take a "partial"
+version which does not have `destruct` but does have operations such
+as `is_app`; this would be more like a conventional ADT, e.g. a stack
+ADT which has `is_empty` and for which popping an empty stack is simply
+undefined.
+
+Aside from that hurdle, it is not unlikely that an equational theory
+for this ADT could be formulated in some manner.  In
+[The Lambda Calculus is Algebraic](https://www.mscs.dal.ca/~selinger/papers/combinatory.pdf) (PDF)
+(Selinger, 1996) an algebra equivalent to the lambda calculus is
+formed by treating free variables as "indeterminates", and although
+I'm not entirely certain what is meant by that, it's very promising
+with respect to the idea of making Lariat into an algebra too.
 
 Appendices
 ----------
