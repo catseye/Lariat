@@ -26,9 +26,14 @@ expect ((a, b):rest) = if (show a) == b then expect rest else ((a, b):expect res
 --
 
 right (Right x) = x
+a = name "a"
+b = name "b"
+c = name "c"
 n = name "n"
 m = name "m"
 q = name "q"
+x = name "x"
+y = name "y"
 
 --
 -- Test cases
@@ -162,8 +167,19 @@ normalize t =
 
 testNormalize = expect
     [
-        (normalize (app (abs n (var n)) (var n)), "FreeVar n")
+        (normalize (app (abs n (var n)) (var n)),
+                   "FreeVar n"),
+        (normalize (app
+                     (abs x (app (var a) (var x)))
+                     (app (abs y (app (var b) (var y))) (var c))
+                   ),
+                   "App (FreeVar a) (App (FreeVar b) (FreeVar c))"),
+        (normalize (app (app (abs x (abs y (app (var y) (var x)))) (var a)) (var b)),
+                   "App (FreeVar b) (FreeVar a)"),
+        (normalize (app (app (abs x (abs y (app (var y) (var x)))) (var y)) (var x)),
+                   "App (FreeVar x) (FreeVar y)")
     ]
+
 
 
 allTests :: String
