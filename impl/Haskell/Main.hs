@@ -29,9 +29,11 @@ right (Right x) = x
 a = name "a"
 b = name "b"
 c = name "c"
+f = name "f"
 n = name "n"
 m = name "m"
 q = name "q"
+t = name "t"
 x = name "x"
 y = name "y"
 
@@ -177,8 +179,16 @@ testNormalize = expect
         (normalize (app (app (abs x (abs y (app (var y) (var x)))) (var a)) (var b)),
                    "App (FreeVar b) (FreeVar a)"),
         (normalize (app (app (abs x (abs y (app (var y) (var x)))) (var y)) (var x)),
-                   "App (FreeVar x) (FreeVar y)")
+                   "App (FreeVar x) (FreeVar y)"),
+        let
+            true = (abs t (abs f (var t)))
+            false = (abs t (abs f (var f)))
+            test = (abs a (abs b (abs c (app (app (var a) (var b)) (var c)))))
+        in
+            (normalize (app (app (app test true) (var m)) (var n)),
+                       "FreeVar m")
     ]
+
 
 
 
