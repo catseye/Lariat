@@ -308,59 +308,62 @@ to a proper lambda term normalizer:
 Discussion
 ----------
 
+### Prior work: Paulson's exercise
+
 The idea of formulating an ADT for lambda terms is not a new one.
-In Chapter 9 of "ML for the Working Programmer" (Paulson 1991), the author
+In Chapter 9 of "ML for the Working Programmer" (1991), Larry Paulson
 develops an implementation of lambda terms in ML and notes
 
 > Signature LAMBDA_NAMELESS is concrete, revealing all the internal
-> details.  [...]  An abstract signature for the lambda-calculus would
-> provide operations upon lambda-terms themselves, hiding their
+> details.  [...]  An abstract signature for the λ-calculus would
+> provide operations upon λ-terms themselves, hiding their
 > representation.
 
-So if the idea is well established, why do we see so few implementations
-of it out there?  I think it's simply because it doesn't have a lot of
+So if the idea is an established one, why does one see so few instances
+of it out in the wild?  I think it's simply because it doesn't have a lot of
 practical value in the usual contexts in which lambda term manipulation
 code is written -- that is to say, research contexts, where industrial
-software engineering methods take a back seat.
+software engineering methods take a back seat.  Especially in theorem
+provers, where a concrete representation may be significantly easier to
+mechanically reason about.
 
-In the context of Lariat, it is an object of study in its own right.
+In the context of Lariat, the ADT is the object of study in its own right.
 
-Now, here's the part I cut out of the paragraph from Paulson's book
-quoted above:
+Now, here's the part I cut out of the above quoted paragraph:
 
 > Many values of type _term_ are **improper**: they do not correspond to
-> real lambda-terms because they contain unmatched bound variable indices.
+> real λ-terms because they contain unmatched bound variable indices.
 > [...]  _abstract_ returns improper terms and _subst_ expects them.
 
 And at the end of the section, he poses Exercise 9.16:
 
-> Define a signature for the lambda-calculus that hides its
-> internal representation.
-
-Which is sort of what I've done with Lariat, except he continues with
-
-> It should specify predicates to test whether a lambda-term is a variable,
+> Define a signature for the λ-calculus that hides its internal representation.
+> It should specify predicates to test whether a λ-term is a variable,
 > an abstraction, or an application, and specify functions for abstraction
 > and substitution.
 
-But as he said earlier, substitution expects improper terms; so he appears
+But, as he said earlier, substitution expects improper terms; so he appears
 to be asking for an abstract representation of lambda terms that includes
-improper lambda terms.
+improper lambda terms.  (Either that or, based on his earlier remark about an
+"abstract signature for the λ-calculus", he intended the operations in this
+exercise to be on the level of the lambda calculus, i.e. beta-reduction and
+normalization?  But that's not what he wrote, so I shall take him at his word.)
 
-Maybe that's OK for the sake of an exercise in a textbook, but that strikes
-me as a poor abstraction.  If you have an abstract object that represents
-instances of something, it's best if your abstract object can _only_ represent
-_valid_ instances of that thing.
+I would argue that such an ADT has a lot less value to the programmer
+than an ADT in which only proper lambda terms can be represented.
 
 (For more information on this philosophy, see "Parse, don't Validate";
 [LCF-style-ND](http://github.com/cpressey/LCF-style-ND) illustrates how
 it applies to theorem objects in an LCF-style theorem prover; and it
 applies here too.)
 
-So if we have an ADT for lambda terms it's best if the ADT can _only_ represent
-_proper_ lambda terms.
+Although it was not in direct response to this exercise (which I hadn't
+seen for years until I came across it again), but it was in consideration
+of this point -- how does one formulate an ADT that represents only
+proper lambda terms? -- that led me to the formulation of the Lariat ADT.
 
-It was considering this point that led to the formulation of the Lariat ADT.
+### The role of `destruct`
+
 `var`, `app`, and `abs` construct terms, while `destruct` takes them apart.
 Constructing terms is the easy part; it's taking them apart properly that's
 hard.
@@ -369,7 +372,13 @@ hard.
 [this article on Destructorizers](http://github.com/cpressey/Destructorizers).
 In fact, this use case of "taking apart" lambda terms was one
 of the major motivations for formulating the destructorizer
-concept.  This is what allows the ADT to be "total".
+concept.
+
+Although it was not consciously intended, `destruct` is also what permits
+the ADT to be "total" in the sense that there are no operations that are
+undefined.
+
+### Equality modulo renaming of bound variables
 
 When working with lambda terms, one is often concerned with
 comparing two lambda terms for equality, modulo renaming of bound
@@ -385,6 +394,8 @@ of the ADT, it is expected that it would already
 be implemented in the implementation of the ADT
 (to correctly implement `destruct`), so could be exposed to the
 user as well.
+
+### The possibility of an algebraic formulation
 
 The ADT that has been described in this document has been described
 quite precisely (I hope) but not formally.  A direction that this
