@@ -70,6 +70,8 @@ for all inputs that conform to their type signatures.  There are no conditions
 undefined, or defined to return an error condition.  This totality does, however,
 come at the cost of the operations being higher-order and with polymorphic types.
 
+For more background information, see the [Discussion](#discussion) section below.
+
 Names
 -----
 
@@ -311,15 +313,16 @@ Discussion
 ### Prior work: Paulson's exercise
 
 The idea of formulating an ADT for lambda terms is not a new one.
-In Chapter 9 of "ML for the Working Programmer" (1991), Larry Paulson
-develops an implementation of lambda terms in ML and notes
+In Chapter 9 of "ML for the Working Programmer", 1st ed. (1991),
+Lawrence Paulson develops an implementation of lambda terms in ML and notes
+that:
 
 > Signature LAMBDA_NAMELESS is concrete, revealing all the internal
 > details.  [...]  An abstract signature for the λ-calculus would
 > provide operations upon λ-terms themselves, hiding their
 > representation.
 
-So if the idea is an established one, why does one see so few instances
+So the idea is an established one; but if so, why does one see so few instances
 of it out in the wild?  I think it's simply because it doesn't have a lot of
 practical value in the usual contexts in which lambda term manipulation
 code is written -- that is to say, research contexts, where industrial
@@ -342,12 +345,13 @@ And at the end of the section, he poses Exercise 9.16:
 > an abstraction, or an application, and specify functions for abstraction
 > and substitution.
 
-But, as he said earlier, substitution expects improper terms; so he appears
-to be asking for an abstract representation of lambda terms that includes
-improper lambda terms.  (Either that or, based on his earlier remark about an
-"abstract signature for the λ-calculus", he intended the operations in this
+However, as he mentioned earlier, these operations produce and expect improper
+terms; so he appears to be asking for an abstract representation of lambda terms
+that includes improper lambda terms.  (Either that or, based on his remark about
+an "abstract signature for the λ-calculus", he intended the operations in this
 exercise to be on the level of the lambda calculus, i.e. beta-reduction and
-normalization?  But that's not what he wrote, so I shall take him at his word.)
+normalization?  But that's not what he wrote, and lacking a copy of the 2nd
+edition to see if this has been corrected, I shall take him at his word.)
 
 I would argue that such an ADT has a lot less value to the programmer
 than an ADT in which only proper lambda terms can be represented.
@@ -358,9 +362,9 @@ it applies to theorem objects in an LCF-style theorem prover; and it
 applies here too.)
 
 Although it was not in direct response to this exercise (which I hadn't
-seen for years until I came across it again), but it was in consideration
+seen for years until I came across it again), it was consideration
 of this point -- how does one formulate an ADT that represents only
-proper lambda terms? -- that led me to the formulation of the Lariat ADT.
+proper lambda terms? -- that led me to formulate Lariat.
 
 ### The role of `destruct`
 
@@ -400,22 +404,37 @@ user as well.
 The ADT that has been described in this document has been described
 quite precisely (I hope) but not formally.  A direction that this
 work could be taken in would be to produce a definition of Lariat that
-is actually formal, i.e. in the form of an equational theory.  However,
-the use of `destruct` to make the ADT total complicates this, as one
-of the operations takes functions.  If one were to formulate equations
-for this ADT, it would be much more straightforward to take a "partial"
-version which does not have `destruct` but does have operations such
-as `is_app`; this would be more like a conventional ADT, e.g. a stack
+is actually formal, i.e. in the form of an equational theory, or
+equivalently, an algebra.
+
+There are reasons to believe this is not impossible.  In
+[The Lambda Calculus is Algebraic](https://www.mscs.dal.ca/~selinger/papers/combinatory.pdf) (PDF)
+(Selinger, 1996) an algebra equivalent to the lambda calculus is
+formed by treating free variables as "indeterminates", although
+I'm not entirely certain what is meant by that.
+
+However, the use of `destruct` complicates this, as it is a "higher-order"
+operation, in the sense that it takes functions as parameters.  This would
+likely make reducing it to a set of equations highly non-straightforward.
+
+To go this route, it would be much more straightforward to refactor Lariat
+into a "partial" ADT, one which does not have `destruct` but does have
+a set of discrete operations such as `is_app`, `app_lhs`, `app_rhs`, and
+so forth.  This would be more like a conventional ADT, e.g. a stack
 ADT which has `is_empty` and for which popping an empty stack is simply
 undefined.
 
-Aside from that hurdle, it is not unlikely that an equational theory
-for this ADT could be formulated in some manner.  In
-[The Lambda Calculus is Algebraic](https://www.mscs.dal.ca/~selinger/papers/combinatory.pdf) (PDF)
-(Selinger, 1996) an algebra equivalent to the lambda calculus is
-formed by treating free variables as "indeterminates", and although
-I'm not entirely certain what is meant by that, it's very promising
-with respect to the idea of making Lariat into an algebra too.
+This "partial" ADT would still face some complications, though, when
+it comes to deconstructing abstractions formed by `abs`; it could
+pick a fresh variable for resolving the binding (and in fact would
+need to, because the user would not be properly equipped to supply a
+suitable one), but it would also need to return that variable, along
+with the deconstructed contents, to the user, so that they could
+sensibly detect what transformation was applied to the contents
+to ensure that the contents did not contain improper bound variables.
+
+Working the resulting equational theory out in detail is potential
+future work here.
 
 Appendices
 ----------
