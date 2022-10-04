@@ -3,8 +3,8 @@ Lariat
 
 _Version 0.3_
 
-**Lariat** is a project to define an abstract data type for lambda terms,
-consisting of five basic operations: `equal` (on names) and
+**Lariat** is a project to define an abstract data type for proper
+lambda terms, consisting of five basic operations: `equal` (on names) and
 `app`, `abs`, `var`, and `destruct` (on terms).
 
 This repository presents the definition of these operations.  It also
@@ -58,13 +58,19 @@ _it does not matter_ which approach is chosen _as long as_ the approach satisfie
 essential properties that we require of lambda terms.
 
 To this end, this article presents an abstract data type (ADT) for lambda terms, which we
-call **Lariat**, consisting of six operations.  The actual, concrete data structure
+call **Lariat**, consisting of five operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
 
-Moreover, this ADT is _total_ in the sense that all operations are defined
+This ADT has two properties.
+
+Firstly, it can represent only _proper_ lambda terms; that is, it is not possible
+for a lambda term constructed by the Lariat operations to contain an invalid
+bound variable.
+
+Secondly, it is _total_ in the sense that all operations are defined
 for all inputs that conform to their type signatures.  There are no conditions
 (such as trying to pop from an empty stack in a stack ADT) where the result is
 undefined, or defined to return an error condition.  This totality does, however,
@@ -86,6 +92,8 @@ is exposed to the user of the ADT through the `equal` operation:
 Given a name _n_ and a name _m_, return true if they are identical names,
 otherwise return false.
 
+...
+
 Secondly, given a set of names, it must be possible to generate a new name that
 is not equal to any of the names in the set (a so-called "fresh" name).
 This facility is not directly exposed as an operation, but is required
@@ -93,7 +101,7 @@ to properly implement the `destruct` operation.  Obtaining a fresh name could
 be as simple as modelling names as natural numbers, taking the maximum of a
 set of names (natural numbers) and adding 1 to it.
 
-> **Note**: Beyond these two operations, it would be reasonable for a practical
+> **Note**: Beyond these basic properties, it would be reasonable for a practical
 > implementation of Lariat to provide other operations such as constructing
 > a new name from a textual representation, rendering a given name to
 > a canonical textual representation, and so forth.  From the perspective
@@ -177,7 +185,7 @@ Some Examples
 -------------
 
 We will now give some concrete examples of how these operations
-can be used, but first, we would like to emphasize that
+can be used.  But first, we would like to emphasize that
 Lariat is an ADT for lambda _terms_, not the lambda
 _calculus_.  Naturally, one ought to be able to write a lambda calculus
 normalizer using these operations (and this will be one of our goals in
@@ -189,10 +197,12 @@ for which terms-with-name-binding might be useful.
 
 A common task is to obtain the set of free variables present
 in a lambda term.  This is not difficult; we only need to
-keep track of the new free variables we introduce ourselves
-when we `destruct` an abstraction term, and make sure not to
-include any of them when we report the free variables we found.
-(In the following pseudocode, `+` is the set union operator.)
+remember that every time we `destruct` an abstraction term, we
+introduce a fresh free variable of our own, to keep track of
+these, and make sure not to include any of them when we
+report the free variables we found.
+
+> **Note**: In the following pseudocode, `+` is the set union operator.
 
     let freevars = fun(t, ours) ->
         destruct(t,
@@ -259,11 +269,11 @@ motivated to undertake it.
 
 The next task would be to search through a lambda term,
 looking for a candidate application term to reduce, and
-reducing it.
+reducing it.  The pseudocode below returns a pair
+`[bool, term]` where the boolean value indicates whether
+the term has been rewritten by the call or not.  It
+implements a leftmost-outermost reduction strategy.
 
-    --
-    -- Returns [bool, term] where bool indicates "has rewritten"
-    --
     let reduce = fun(t) ->
         if is_beta_reducible(t) then
             [true, beta(t)]
@@ -287,7 +297,7 @@ reducing it.
                 fun(t) -> [false, t]
             )
 
-From there it ought to be just a hop, a skip, and a jump
+From there it's just a hop, a skip, and a jump
 to a proper lambda term normalizer:
 
     let normalize(t) ->
