@@ -4,7 +4,7 @@ Lariat
 _Version 0.3_
 
 **Lariat** is a project to define an abstract data type for lambda terms,
-consisting of six basic operations: `equal` and `fresh` (on names), and
+consisting of five basic operations: `equal` (on names) and
 `app`, `abs`, `var`, and `destruct` (on terms).
 
 This repository presents the definition of these operations.  It also
@@ -75,38 +75,26 @@ For more background information, see the [Discussion](#discussion) section below
 Names
 -----
 
-In any explication of name binding we must deal with names.  In Lariat 0.1, names
-were left almost entirely undefined; the only operation they were required to
-support was comparison of two names for equality.  While this extreme level of
-abstraction might be attractive from a theoretical perspective, it introduced
-complications and awkwardness for any potential practical application of the ADT.
+In any explication of name binding we must deal with names.  As of 0.3, Lariat
+requires only two properties of names.
 
-In Lariat 0.2 and beyond, names are treated as abstract objects much like terms, and we
-specify that names must support the following two operations:
+Firstly, it must be possible to compare two names for equality.  This facility
+is exposed to the user of the ADT through the `equal` operation:
 
 ### `equal(n: name, m: name): boolean`
 
 Given a name _n_ and a name _m_, return true if they are identical names,
 otherwise return false.
 
-### `fresh(ns: set of name): name`
+Secondly, given a set of names, it must be possible to generate a new name that
+is not equal to any of the names in the set (a so-called "fresh" name).
+This facility is not directly exposed as an operation, but is required
+to properly implement the `destruct` operation.  Obtaining a fresh name could
+be as simple as modelling names as natural numbers, taking the maximum of a
+set of names (natural numbers) and adding 1 to it.
 
-Given a set of names _ns_, return a name which does not occur in _ns_.
-We say this returned name is "fresh for _ns_".
-
-The means by which the fresh name is generated is abstracted away; we
-only care about the guarantee that it is not a member of _ns_.  For
-discussion on implementation, see [Appendix A](#appendix-a).
-
-The operation should be deterministic in the sense that, given the
-same set of names, it always returns the same fresh name.
-
-> **Note**: It is not required that the `fresh` operation be
-> exposed to the user; it is, rather, a structural requirement
-> of a correct implementation of `destruct`, below.
-
-> **Note**: Beyond these two operations, it would be expected that a practical
-> implementation of Lariat would provide other operations such as constructing
+> **Note**: Beyond these two operations, it would be reasonable for a practical
+> implementation of Lariat to provide other operations such as constructing
 > a new name from a textual representation, rendering a given name to
 > a canonical textual representation, and so forth.  From the perspective
 > of Lariat itself these are ancillary operations, and as such will not be
@@ -168,7 +156,8 @@ the first subterm of _t_ and _v_ is the second subterm of _t_.
 If _t_ is an abstraction term, evaluate _f3_(_u_, _n_) where _u_ is
 a version of _t_ where all bound variables in _u_ that were bound to
 _u_ itself have been replaced by _n_, where _n_ is a fresh name
-(i.e. a name that does not occur free anywhere in _u_).
+(i.e. a name that does not occur in any free variable in any subterm
+of _u_).
 
 > **Note**: as stated above, a bound variable is always bound
 > to an abstraction term.  The bound variables that are replaced by the
@@ -180,6 +169,9 @@ _u_ itself have been replaced by _n_, where _n_ is a fresh name
 > 
 >     destruct(t: term, f1: fun(n: name): X, f2: fun(u: term, v: term): X, f3: fun(u: term, n: name): X): X
 > 
+
+> **Note**: see the section on "Names" above for the basic
+> requirements for obtaining a fresh name.
 
 Some Examples
 -------------
@@ -435,41 +427,3 @@ to ensure that the contents did not contain improper bound variables.
 
 Working the resulting equational theory out in detail is potential
 future work here.
-
-Appendices
-----------
-
-### Appendix A
-
-#### On the implementation of names.
-
-One way to implement names as defined in Lariat 0.3 is to use _qualified names_.
-A qualified name is an ordered list of _name segments_, where each name segment
-is what a name was in Lariat 0.1, i.e. the only operation we require name segments
-to support is comparison of two name segments for equality.  (Comparing two
-qualified names for equality is straightforwardly derived from this.)
-
-The client of the Lariat ADT is not, by themselves, required to qualify any
-names; if each qualified name they supply in their usage consists of only a
-single name segment, that's fine.
-
-However, qualified names permit the definition of a simple algorithm for
-generating a fresh name, i.e. a name which does not appear in a given set
-of names.  To wit,
-
-*   pick the longest qualified name from the set;
-*   prepend an arbitrary name segment to that qualified name.
-
-If there are more than one longest names in the set, pick one arbitrarily.
-
-In addition, a simple way to pick an arbitrary name segment to prepend to
-it, is to look at the leftmost name segment already in the qualified name.
-
-So we can assume an algorithm like this is in use.  But ultimately, any
-implementation which satisfies the two operations required of names
-(`equal` and `fresh`) is acceptable.  This concrete representation and
-algorithm is provided here partly because a trivial concrete representation
-as used in Lariat 0.1 is _not_ sufficient for implementing names (as there
-is no derivable way to obtain a fresh name when needed, without relying on
-some external fresh name supply) and I wanted to show that there was at least
-_some_ concrete representation which fulfills the requirements.
