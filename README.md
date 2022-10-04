@@ -393,6 +393,10 @@ be possible to build such an operation using `destruct`; basically,
 render the two terms as text (or some other concrete representation),
 then compare the texts for equality.
 
+(The procedure for obtaining a fresh name needs to be deterministic
+for this to work properly, so that the fresh names generated when
+`destruct`ing two equal abstractions, match up in both of the terms.)
+
 But of course such an operation could be provided as a native
 operation for performance or convenience.  Similarly, although
 we have shown that we can implement `freevars` using the operations
