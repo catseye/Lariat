@@ -3,13 +3,13 @@ Lariat
 
 _Version 0.3_
 
-**Lariat** is a project to define an abstract data type for proper
-lambda terms, consisting of five basic operations: `equal` (on names) and
-`app`, `abs`, `var`, and `destruct` (on terms).
+**Lariat** is a project to define a total abstract data type for
+proper lambda terms, consisting of four basic operations:
+`app`, `abs`, `var`, and `destruct`.
 
 This repository presents the definition of these operations.  It also
-contains implementations of this abstract data type (and possibly one
-day variations on it) in various programming languages, including:
+contains implementations of this abstract data type in various
+programming languages, currently including:
 
 *   [Haskell](impl/Haskell/)
 
@@ -58,11 +58,15 @@ _it does not matter_ which approach is chosen _as long as_ the approach satisfie
 essential properties that we require of lambda terms.
 
 To this end, this article presents an abstract data type (ADT) for lambda terms, which we
-call **Lariat**, consisting of five operations.  The actual, concrete data structure
+call **Lariat**, consisting of four operations.  The actual, concrete data structure
 in which they are stored, and the actual, concrete mechanism by which names
 become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
+
+This ADT is designed for simplicity rather than performance.  It is a minimal
+formulation that does not necessarily make any of commonly-used manipulations
+of lambda terms efficient.
 
 This ADT has two properties.
 
@@ -84,15 +88,10 @@ Names
 In any explication of name binding we must deal with names.  As of 0.3, Lariat
 requires only two properties of names.
 
-Firstly, it must be possible to compare two names for equality.  This facility
-is exposed to the user of the ADT through the `equal` operation:
-
-### `equal(n: name, m: name): boolean`
-
-Given a name _n_ and a name _m_, return true if they are identical names,
-otherwise return false.
-
-...
+Firstly, it must be possible to compare two names for equality.  This is
+required for operations that replace a free variable with a given name
+with a value -- there must be some way for them to check that the free
+variable has the name that they are seeking.
 
 Secondly, given a set of names, it must be possible to generate a new name that
 is not equal to any of the names in the set (a so-called "fresh" name).
@@ -101,12 +100,14 @@ to properly implement the `destruct` operation.  Obtaining a fresh name could
 be as simple as modelling names as natural numbers, taking the maximum of a
 set of names (natural numbers) and adding 1 to it.
 
-> **Note**: Beyond these basic properties, it would be reasonable for a practical
-> implementation of Lariat to provide other operations such as constructing
-> a new name from a textual representation, rendering a given name to
-> a canonical textual representation, and so forth.  From the perspective
-> of Lariat itself these are ancillary operations, and as such will not be
-> defined in this document.
+Note that, although neither of these properties is exposed as an operation,
+it would be reasonable for a practical implementation of Lariat to do so.
+
+And beyond these basic properties, it would also be reasonable to provide
+other operations on names, such as constructing a new name from a textual
+representation, rendering a given name to a canonical textual representation,
+and so forth.  From the perspective of Lariat itself these are ancillary
+operations, and as such will not be defined in this document.
 
 Terms
 -----

@@ -31,7 +31,7 @@ data Term a = FreeVar a
             | App (Term a) (Term a)
             | Abs (Term a)
             | BoundVar Integer
-    deriving (Show, Ord, Eq)
+    deriving (Show)
 
 var :: a -> Term a
 var n = FreeVar n
