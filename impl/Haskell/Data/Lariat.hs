@@ -1,9 +1,14 @@
 module Data.Lariat (name, var, app, abs, destruct) where
 
+--
+-- This is a concrete implementation of the Lariat ADT that uses a
+-- "locally nameless"-like internal representation of lambda terms.
+--
+
 import Prelude hiding (abs)
 
-class Freshable α where
-    fresh :: [α] -> α
+class Freshable a where
+    fresh :: [a] -> a
 
 data Name = Name String
     deriving (Eq)
@@ -22,26 +27,26 @@ instance Freshable Name where
             longestName (x:xs) acc = longestName xs (if (nameLength x) > (nameLength acc) then x else acc)
             nameLength (Name s) = length s
 
-data Term α = FreeVar α
-            | App (Term α) (Term α)
-            | Abs (Term α)
+data Term a = FreeVar a
+            | App (Term a) (Term a)
+            | Abs (Term a)
             | BoundVar Integer
-    deriving (Show, Ord, Eq)
+    deriving (Show)
 
-var :: α -> Term α
+var :: a -> Term a
 var n = FreeVar n
 
-app :: Term α -> Term α -> Term α
+app :: Term a -> Term a -> Term a
 app t u = App t u
 
-abs :: (Eq α) => α -> Term α -> Term α
+abs :: (Eq a) => a -> Term a -> Term a
 abs n t = Abs (bind n t 0) where
     bind n (App t u) level = App (bind n t level) (bind n u level)
     bind n (Abs t) level = Abs (bind n t (level + 1))
     bind n t@(FreeVar m) level = if n == m then (BoundVar level) else t
     bind _ t _ = t
 
-destruct :: (Freshable α) => Term α -> (α -> β) -> (Term α -> Term α -> β) -> (Term α -> α -> β) -> β
+destruct :: (Freshable a) => Term a -> (a -> b) -> (Term a -> Term a -> b) -> (Term a -> a -> b) -> b
 destruct (FreeVar n) f _ _ = f n
 destruct (App t u)   _ f _ = f t u
 destruct (Abs b)     _ _ f =
