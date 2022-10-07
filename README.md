@@ -64,12 +64,11 @@ become bound to terms, are of no consequence (and may well be hidden
 from the programmer) so long as the implementation of the operations conforms
 to the stated specification.
 
-This ADT is designed for simplicity rather than performance.  It is a minimal
+This ADT is designed for simplicity and elegance rather than performance.  It is a minimal
 formulation that does not necessarily make any of commonly-used manipulations
 of lambda terms efficient.
 
-This ADT has two properties.
-
+This ADT has two properties, intended to contribute to its elegance.
 Firstly, it can represent only _proper_ lambda terms; that is, it is not possible
 for a lambda term constructed by the Lariat operations to contain an invalid
 bound variable.
@@ -77,7 +76,7 @@ bound variable.
 Secondly, it is _total_ in the sense that all operations are defined
 for all inputs that conform to their type signatures.  There are no conditions
 (such as trying to pop from an empty stack in a stack ADT) where the result is
-undefined, or defined to return an error condition.  This totality does, however,
+undefined, nor any defined to return an error condition.  This totality does, however,
 come at the cost of the operations being higher-order and with polymorphic types.
 
 For more background information, see the [Discussion](#discussion) section below.
@@ -85,25 +84,23 @@ For more background information, see the [Discussion](#discussion) section below
 Names
 -----
 
-In any explication of name binding we must deal with names.  As of 0.3, Lariat
-requires only two properties of names.
+Lambda terms are essentially about name binding, and in any explication of name binding,
+we must deal with names.  As of 0.3, Lariat requires only two properties of names.
 
 Firstly, it must be possible to compare two names for equality.  This is
-required for operations that replace a free variable with a given name
+required for operations that replace free variables that have a given name
 with a value -- there must be some way for them to check that the free
 variable has the name that they are seeking.
 
 Secondly, given a set of names, it must be possible to generate a new name that
-is not equal to any of the names in the set (a so-called "fresh" name).
-This facility is not directly exposed as an operation, but is required
-to properly implement the `destruct` operation.  Obtaining a fresh name could
-be as simple as modelling names as natural numbers, taking the maximum of a
-set of names (natural numbers) and adding 1 to it.
+is not equal to any of the names in the set (a so-called "fresh" name).  This is
+required to properly implement the `destruct` operation.  If names are modelled
+as character strings, obtaining a fresh name could be as simple as finding the
+longest string of a set of strings, and prepending `"a"` to it.
 
 Note that, although neither of these properties is exposed as an operation,
-it would be reasonable for a practical implementation of Lariat to do so.
-
-And beyond these basic properties, it would also be reasonable to provide
+it would be reasonable for a practical implementation of Lariat to expose
+them so.  It would also be reasonable to provide
 other operations on names, such as constructing a new name from a textual
 representation, rendering a given name to a canonical textual representation,
 and so forth.  From the perspective of Lariat itself these are ancillary
@@ -174,7 +171,7 @@ of _u_).
 > bound to the abstraction term being `destruct`ed.
 
 > **Note**: the `destruct` operation's signature shown above was abbreviated to make
-> it look less intimidating.  The full signature would be
+> it less intimidating.  The full signature would be
 > 
 >     destruct(t: term, f1: fun(n: name): X, f2: fun(u: term, v: term): X, f3: fun(u: term, n: name): X): X
 > 
@@ -326,16 +323,19 @@ that:
 > representation.
 
 So the idea is an established one; but if so, why does one see so few instances
-of it out in the wild?  I think it's simply because it doesn't have a lot of
-practical value in the usual contexts in which lambda term manipulation
-code is written -- that is to say, research contexts, where industrial
-software engineering methods take a back seat.  Especially in theorem
-provers, where a concrete representation may be significantly easier to
-mechanically reason about.
+of it out in the wild?  I think it's this: most lambda term manipulation code
+sees actual use only academic contexts, most usually in such things as theorem provers.
+These are contexts that don't greatly benefit from the software
+engineering principle of being able to swap out one implementation
+of an interface with an alternative implementation.  Indeed, in a
+theorem proving context, an extra level of abstraction may just
+be another burden that the mechanical reasoning methods need to
+deal with, with no other benefit.  So concrete data types are used,
+because concrete data types are sufficient.
 
-In the context of Lariat, the ADT is the object of study in its own right.
+In the context of Lariat, however, the ADT is the object of study in its own right.
 
-Now, here's the part I cut out of the above quoted paragraph:
+Now, here's the part I elided from the above quoted paragraph:
 
 > Many values of type _term_ are **improper**: they do not correspond to
 > real λ-terms because they contain unmatched bound variable indices.
@@ -350,19 +350,10 @@ And at the end of the section, he poses Exercise 9.16:
 
 However, as he mentioned earlier, these operations produce and expect improper
 terms; so he appears to be asking for an abstract representation of lambda terms
-that includes improper lambda terms.  (Either that or, based on his remark about
-an "abstract signature for the λ-calculus", he intended the operations in this
-exercise to be on the level of the lambda calculus, i.e. beta-reduction and
-normalization?  But that's not what he wrote, and lacking a copy of the 2nd
-edition to see if this has been corrected, I shall take him at his word.)
-
-I would argue that such an ADT has a lot less value to the programmer
+that includes improper lambda terms.  [[Footnote 1]](#footnote-1)
+I would argue that such an ADT has a lot less value as an abstraction
 than an ADT in which only proper lambda terms can be represented.
-
-(For more information on this philosophy, see "Parse, don't Validate";
-[LCF-style-ND](http://github.com/cpressey/LCF-style-ND) illustrates how
-it applies to theorem objects in an LCF-style theorem prover; and it
-applies here too.)
+[[Footnote 2]](#footnote-2)
 
 Although it was not in direct response to this exercise (which I hadn't
 seen for years until I came across it again), it was consideration
@@ -381,7 +372,7 @@ In fact, this use case of "taking apart" lambda terms was one
 of the major motivations for formulating the destructorizer
 concept.
 
-Although it was not consciously intended, `destruct` is also what permits
+Although it was not specifically intended, `destruct` is also what permits
 the ADT to be "total" in the sense that there are no operations that are
 undefined.
 
@@ -392,19 +383,19 @@ comparing two lambda terms for equality, modulo renaming of bound
 variables.  We haven't introduced such an operation because it should
 be possible to build such an operation using `destruct`; basically,
 render the two terms as text (or some other concrete representation),
-then compare the texts for equality.
+then compare the texts for equality.  (This does however require that
+thete is an operation for rendering a name to its textual representation,
+and also that the procedure for obtaining a fresh name is deterministic,
+so that the fresh names generated when `destruct`ing two equal abstractions,
+match up in both of the terms.)
 
-(The procedure for obtaining a fresh name needs to be deterministic
-for this to work properly, so that the fresh names generated when
-`destruct`ing two equal abstractions, match up in both of the terms.)
-
-But of course such an operation could be provided as a native
-operation for performance or convenience.  Similarly, although
-we have shown that we can implement `freevars` using the operations
-of the ADT, it is expected that it would already
-be implemented in the implementation of the ADT
-(to correctly implement `destruct`), so could be exposed to the
-user as well.
+Of course, such an operation could be provided as a native
+operation for performance or convenience.  (This is one of the nice
+things about ADTs -- they can be sub-ADTs of a larger ADT.)  Similarly,
+although we have shown that we can implement `freevars` using the operations
+of the ADT, the definition of the `destruct` operation essentially requires
+that something equivalent to it already exists, and it could be exposed to
+the user as well.
 
 ### The possibility of an algebraic formulation
 
@@ -417,28 +408,66 @@ equivalently, an algebra.
 There are reasons to believe this is not impossible.  In
 [The Lambda Calculus is Algebraic](https://www.mscs.dal.ca/~selinger/papers/combinatory.pdf) (PDF)
 (Selinger, 1996) an algebra equivalent to the lambda calculus is
-formed by treating free variables as "indeterminates", although
-I'm not entirely certain what is meant by that.
+formed by treating free variables as "indeterminates" (although
+I must admit I'm not entirely certain what is meant by that).
+Additionally, section 1.3 of [Language Prototyping: An Algebraic Specification Approach](https://archive.org/details/languageprototyp0000unse)
+(1996; van Deursen, Heering, Klint eds., borrowable online at archive.org)
+gives a definition of the lambda calculus in the algebraic definition
+language ASF+SDF, which comes fairly close to conventional equational logic
+(although it does contain extras such as conditional equations).
 
-However, the use of `destruct` complicates this, as it is a "higher-order"
-operation, in the sense that it takes functions as parameters.  This would
-likely make reducing it to a set of equations highly non-straightforward.
+However, in Lariat, `destruct` is a "higher-order" operation,
+in the sense that it takes functions as parameters, and this may
+well complicate the task of defining an equational theory based
+on Lariat, or it may complicate the resulting equational theory.
+We'll talk about that in the next section.
 
-To go this route, it would be much more straightforward to refactor Lariat
-into a "partial" ADT, one which does not have `destruct` but does have
-a set of discrete operations such as `is_app`, `app_lhs`, `app_rhs`, and
-so forth.  This would be more like a conventional ADT, e.g. a stack
-ADT which has `is_empty` and for which popping an empty stack is simply
-undefined.
+### Variation: Partial Lariat
 
-This "partial" ADT would still face some complications, though, when
-it comes to deconstructing abstractions formed by `abs`; it could
-pick a fresh variable for resolving the binding (and in fact would
-need to, because the user would not be properly equipped to supply a
-suitable one), but it would also need to return that variable, along
-with the deconstructed contents, to the user, so that they could
-sensibly detect what transformation was applied to the contents
-to ensure that the contents did not contain improper bound variables.
+To support the effort of formulating an algebra based on Lariat,
+or for any other purposes which it may suite, it's worth looking at the possibility
+of replacing `destruct` with a set of "first-order" operations.
 
-Working the resulting equational theory out in detail is potential
-future work here.
+When I first started working out Lariat, I thought that using a
+destructorizer would be essential to the problem of being able to
+destruct an abstraction term and have the result be a proper lambda term.
+It's not as essential as I thought.  What `destruct` does when given
+an abstraction term is, basically, to form a free variable with a
+fresh name (one that does not occur in the abstraction term) and
+`resolve` (as defined in the examples above) the abstraction term with it.
+If the ADT were to have discrete operations for picking a fresh name
+given a lambda term, and for `resolve`, these could be applied
+"manually", and in this manner the user could destruct abstraction
+terms just the same as `destruct` does.
+
+There are subtle differences: `resolve` would need to be an intrinsic operation
+which is exposed by the ADT, rather that derived from the basic operations
+of Lariat.  It also gives the user the freedom to apply `resolve` with whatever
+they wish, while in Lariat, `destruct` can only apply this action with a fresh
+variable that it itself has chosen, which is significantly more restrictive.
+
+A version of Lariat without `destruct` would also need operations
+for testing if a term is an abstraction term, vs. an application
+term, vs. a free variable.  The operation of extracting the first
+and second values from an application term (basically, the theory
+of ordered pairs) would not be sensibly defined for abstraction
+terms or free variables, and so this version of the ADT would be
+partial rather than total, thus the name "Partial Lariat".
+
+Footnotes
+---------
+
+#### Footnote 1
+
+Either that or, based on his remark about
+an "abstract signature for the λ-calculus", he intended the operations in this
+exercise to be on the level of the lambda calculus, i.e. beta-reduction and
+normalization?  But that's not what he wrote, and lacking a copy of the 2nd
+edition to see if this has been corrected, I shall take him at his word.
+
+#### Footnote 2
+
+For more information on this philosophy, see "Parse, don't Validate";
+in particular, [LCF-style-ND](http://github.com/cpressey/LCF-style-ND)
+illustrates how it applies to theorem objects in an LCF-style theorem prover;
+and it applies here too.
