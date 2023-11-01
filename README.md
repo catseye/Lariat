@@ -367,7 +367,7 @@ Constructing terms is the easy part; it's taking them apart properly that's
 hard.
 
 `destruct` is a "destructorizer" in the sense described in 
-[this article on Destructorizers](http://github.com/cpressey/Destructorizers).
+[this article on Destructorizers](https://codeberg.org/catseye/The-Dossier/src/branch/master/article/Destructorizers/README.md).
 In fact, this use case of "taking apart" lambda terms was one
 of the major motivations for formulating the destructorizer
 concept.
@@ -468,6 +468,6 @@ edition to see if this has been corrected, I shall take him at his word.
 #### Footnote 2
 
 For more information on this philosophy, see "Parse, don't Validate";
-in particular, [LCF-style-ND](http://github.com/cpressey/LCF-style-ND)
+in particular, [LCF-style Natural Deduction](https://codeberg.org/catseye/The-Dossier/src/branch/master/article/LCF-style-Natural-Deduction)
 illustrates how it applies to theorem objects in an LCF-style theorem prover;
 and it applies here too.
